@@ -77,5 +77,8 @@
     "electron": "^42.4.1",
     "electron-builder": "^26.15.3",
     "playwright": "^1.61.0"
+  },
+  "overrides": {
+    "esbuild": "^0.28.0"
   }
 }

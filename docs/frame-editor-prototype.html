@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>InkTime Frame Editor Prototype</title>
+    <style>
+      :root {
+        --bg: #eef1ed;
+        --panel: rgba(255, 255, 255, 0.82);
+        --panel-strong: #ffffff;
+        --line: rgba(24, 30, 27, 0.12);
+        --line-strong: rgba(24, 30, 27, 0.22);
+        --text: #171b18;
+        --muted: rgba(23, 27, 24, 0.58);
+        --accent: #0e7a55;
+        --accent-soft: rgba(14, 122, 85, 0.12);
+        --danger: #b84a42;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 1120px;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+          linear-gradient(135deg, rgba(14, 122, 85, 0.1), transparent 28rem),
+          radial-gradient(circle at 100% 0%, rgba(40, 57, 49, 0.12), transparent 34rem),
+          var(--bg);
+        font-family: "Songti SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", serif;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: 236px minmax(0, 1fr) 312px;
+        gap: 14px;
+        min-height: 100vh;
+        padding: 14px;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 18px 58px rgba(20, 28, 24, 0.12);
+        backdrop-filter: blur(18px);
+      }
+
+      .left,
+      .right {
+        padding: 14px;
+      }
+
+      .brand {
+        display: grid;
+        gap: 4px;
+        margin-bottom: 18px;
+      }
+
+      .brand strong {
+        font-size: 21px;
+        letter-spacing: 0;
+      }
+
+      .brand span,
+      .sectionTitle,
+      .hint,
+      .field span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .toolGroup {
+        display: grid;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+
+      .sectionTitle {
+        margin-bottom: 2px;
+        font-weight: 700;
+      }
+
+      .chip,
+      .sample,
+      .toolbar button,
+      .primary {
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel-strong);
+        color: var(--text);
+        padding: 0 12px;
+      }
+
+      .chip.active,
+      .sample.active {
+        border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .canvasShell {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        overflow: hidden;
+      }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .toolbarActions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: white;
+      }
+
+      .stageWrap {
+        display: grid;
+        place-items: center;
+        min-height: 760px;
+        padding: 28px;
+      }
+
+      .stage {
+        position: relative;
+        width: 420px;
+        height: 700px;
+        overflow: hidden;
+        border: 1px solid rgba(18, 22, 20, 0.16);
+        border-radius: 24px;
+        background: #f8f4ec;
+        box-shadow: 0 30px 86px rgba(22, 27, 24, 0.2);
+      }
+
+      .grid {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(20, 26, 23, 0.045) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(20, 26, 23, 0.045) 1px, transparent 1px);
+        background-size: 20px 20px;
+      }
+
+      .guideH,
+      .guideV {
+        position: absolute;
+        pointer-events: none;
+        background: rgba(14, 122, 85, 0.42);
+      }
+
+      .guideH {
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: 1px;
+      }
+
+      .guideV {
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 1px;
+      }
+
+      .layer {
+        position: absolute;
+        border: 1px solid transparent;
+        user-select: none;
+      }
+
+      .layer.selected {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(14, 122, 85, 0.14);
+      }
+
+      .photoLayer {
+        overflow: hidden;
+        border-radius: 16px;
+        background: #d7dbd5;
+      }
+
+      .photoLayer img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .caption {
+        font-size: 24px;
+        line-height: 1.34;
+        font-weight: 650;
+      }
+
+      .date,
+      .place,
+      .score {
+        color: rgba(22, 25, 23, 0.68);
+        font-size: 15px;
+      }
+
+      .handle {
+        position: absolute;
+        right: -6px;
+        bottom: -6px;
+        width: 12px;
+        height: 12px;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        background: var(--accent);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+      }
+
+      .right h2 {
+        margin: 0 0 12px;
+        font-size: 20px;
+      }
+
+      .fieldGrid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field input,
+      .field select {
+        width: 100%;
+        height: 36px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel-strong);
+        color: var(--text);
+        padding: 0 10px;
+        outline: none;
+      }
+
+      .field input:focus,
+      .field select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
+      }
+
+      .hint {
+        margin-top: 14px;
+        line-height: 1.7;
+      }
+
+      .jsonBox {
+        margin-top: 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.7);
+        padding: 10px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+        line-height: 1.45;
+        color: rgba(20, 24, 22, 0.68);
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <aside class="panel left">
+        <div class="brand">
+          <strong>InkTime Layout</strong>
+          <span>相框模板编辑器原型</span>
+        </div>
+
+        <div class="toolGroup">
+          <div class="sectionTitle">模板</div>
+          <button class="chip active" data-frame="portrait">竖图模板</button>
+          <button class="chip" data-frame="landscape">横图模板</button>
+          <button class="chip" data-frame="square">方图模板</button>
+        </div>
+
+        <div class="toolGroup">
+          <div class="sectionTitle">样张预览</div>
+          <button class="sample active" data-sample="food">食物</button>
+          <button class="sample" data-sample="river">旅行</button>
+          <button class="sample" data-sample="stone">风景</button>
+        </div>
+
+        <div class="toolGroup">
+          <div class="sectionTitle">图层</div>
+          <button class="chip active" data-select="photo">照片区域</button>
+          <button class="chip" data-select="caption">主短句</button>
+          <button class="chip" data-select="date">日期</button>
+          <button class="chip" data-select="place">地点</button>
+          <button class="chip" data-select="score">回忆度</button>
+        </div>
+      </aside>
+
+      <section class="panel canvasShell">
+        <header class="toolbar">
+          <div>
+            <strong>拖拽图层，右下角圆点缩放</strong>
+            <div class="hint">靠近中心线会吸附，保存后成为 JSON 模板</div>
+          </div>
+          <div class="toolbarActions">
+            <button id="reset">重置</button>
+            <button class="primary" id="save">保存模板</button>
+          </div>
+        </header>
+
+        <div class="stageWrap">
+          <div class="stage" id="stage">
+            <div class="grid"></div>
+            <div class="guideH"></div>
+            <div class="guideV"></div>
+            <div class="layer photoLayer selected" data-layer="photo" style="left: 24px; top: 24px; width: 372px; height: 500px">
+              <img id="photo" alt="" />
+              <i class="handle"></i>
+            </div>
+            <div class="layer caption" data-layer="caption" style="left: 32px; top: 548px; width: 270px; height: 68px">
+              不用管热量，先尝尝这口焦香再说。
+              <i class="handle"></i>
+            </div>
+            <div class="layer date" data-layer="date" style="left: 32px; top: 642px; width: 108px; height: 24px">
+              2026.06.14
+              <i class="handle"></i>
+            </div>
+            <div class="layer place" data-layer="place" style="left: 238px; top: 642px; width: 132px; height: 24px">
+              重庆
+              <i class="handle"></i>
+            </div>
+            <div class="layer score" data-layer="score" style="left: 286px; top: 604px; width: 84px; height: 24px">
+              回忆度 78
+              <i class="handle"></i>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel right">
+        <h2 id="layerTitle">照片区域</h2>
+        <div class="fieldGrid">
+          <label class="field">
+            <span>X</span>
+            <input id="x" type="number" />
+          </label>
+          <label class="field">
+            <span>Y</span>
+            <input id="y" type="number" />
+          </label>
+          <label class="field">
+            <span>宽度</span>
+            <input id="w" type="number" />
+          </label>
+          <label class="field">
+            <span>高度</span>
+            <input id="h" type="number" />
+          </label>
+          <label class="field">
+            <span>字号</span>
+            <input id="fontSize" type="number" />
+          </label>
+          <label class="field">
+            <span>字体</span>
+            <select id="fontFamily">
+              <option value='Songti SC, Noto Serif CJK SC, serif'>宋体 / 衬线</option>
+              <option value='PingFang SC, Hiragino Sans GB, sans-serif'>苹方 / 黑体</option>
+              <option value='Kaiti SC, STKaiti, serif'>楷体</option>
+              <option value='Helvetica Neue, Arial, sans-serif'>Helvetica</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>对齐</span>
+            <select id="align">
+              <option value="left">左对齐</option>
+              <option value="center">居中</option>
+              <option value="right">右对齐</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">第一版真实实现会保存横图、竖图、方图三套模板。这里先让你确认画布、图层和属性面板是不是这个方向。</p>
+        <div class="jsonBox" id="json"></div>
+      </aside>
+    </main>
+
+    <script>
+      const samples = {
+        food: createPlaceholderSample("Warm Dish", "#d97706", "#fcd34d"),
+        river: createPlaceholderSample("Lake Light", "#0f766e", "#7dd3fc"),
+        stone: createPlaceholderSample("Stone Path", "#4b5563", "#d1d5db"),
+      };
+
+      const labels = {
+        photo: "照片区域",
+        caption: "主短句",
+        date: "日期",
+        place: "地点",
+        score: "回忆度",
+      };
+
+      const stage = document.querySelector("#stage");
+      const photo = document.querySelector("#photo");
+      const json = document.querySelector("#json");
+      const fields = {
+        x: document.querySelector("#x"),
+        y: document.querySelector("#y"),
+        w: document.querySelector("#w"),
+        h: document.querySelector("#h"),
+        fontSize: document.querySelector("#fontSize"),
+        fontFamily: document.querySelector("#fontFamily"),
+        align: document.querySelector("#align"),
+      };
+      let selected = document.querySelector('[data-layer="photo"]');
+      let action = null;
+
+      photo.src = samples.food;
+
+      function createPlaceholderSample(label, topColor, bottomColor) {
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1600" viewBox="0 0 1200 1600">
+          <defs>
+            <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${topColor}"/>
+              <stop offset="100%" stop-color="${bottomColor}"/>
+            </linearGradient>
+          </defs>
+          <rect width="1200" height="1600" fill="url(#bg)"/>
+          <text x="600" y="760" text-anchor="middle" font-family="Georgia, serif" font-size="96" fill="rgba(255,255,255,0.92)">${label}</text>
+        </svg>`;
+        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      }
+
+      function selectLayer(layer) {
+        document.querySelectorAll(".layer").forEach((item) => item.classList.remove("selected"));
+        selected = layer;
+        selected.classList.add("selected");
+        document.querySelector("#layerTitle").textContent = labels[selected.dataset.layer];
+        document.querySelectorAll("[data-select]").forEach((item) => item.classList.toggle("active", item.dataset.select === selected.dataset.layer));
+        syncFields();
+      }
+
+      function px(value) {
+        return Math.round(parseFloat(value || "0"));
+      }
+
+      function syncFields() {
+        fields.x.value = px(selected.style.left);
+        fields.y.value = px(selected.style.top);
+        fields.w.value = px(selected.style.width);
+        fields.h.value = px(selected.style.height);
+        fields.fontSize.value = px(getComputedStyle(selected).fontSize);
+        fields.fontFamily.value = selected.style.fontFamily || "Songti SC, Noto Serif CJK SC, serif";
+        fields.align.value = getComputedStyle(selected).textAlign || "left";
+        renderJson();
+      }
+
+      function applyFields() {
+        selected.style.left = `${fields.x.value}px`;
+        selected.style.top = `${fields.y.value}px`;
+        selected.style.width = `${fields.w.value}px`;
+        selected.style.height = `${fields.h.value}px`;
+        if (selected.dataset.layer !== "photo") {
+          selected.style.fontSize = `${fields.fontSize.value}px`;
+          selected.style.fontFamily = fields.fontFamily.value;
+          selected.style.textAlign = fields.align.value;
+        }
+        renderJson();
+      }
+
+      function snap(value, target) {
+        return Math.abs(value - target) < 8 ? target : value;
+      }
+
+      function renderJson() {
+        const data = {};
+        document.querySelectorAll(".layer").forEach((layer) => {
+          data[layer.dataset.layer] = {
+            x: px(layer.style.left),
+            y: px(layer.style.top),
+            width: px(layer.style.width),
+            height: px(layer.style.height),
+            fontSize: px(getComputedStyle(layer).fontSize),
+            fontFamily: layer.style.fontFamily || getComputedStyle(layer).fontFamily,
+            align: getComputedStyle(layer).textAlign || "left",
+          };
+        });
+        json.textContent = JSON.stringify(data, null, 2);
+      }
+
+      stage.addEventListener("pointerdown", (event) => {
+        const layer = event.target.closest(".layer");
+        if (!layer) return;
+        selectLayer(layer);
+        const rect = layer.getBoundingClientRect();
+        const stageRect = stage.getBoundingClientRect();
+        action = {
+          layer,
+          mode: event.target.classList.contains("handle") ? "resize" : "drag",
+          startX: event.clientX,
+          startY: event.clientY,
+          left: rect.left - stageRect.left,
+          top: rect.top - stageRect.top,
+          width: rect.width,
+          height: rect.height,
+        };
+        layer.setPointerCapture(event.pointerId);
+      });
+
+      stage.addEventListener("pointermove", (event) => {
+        if (!action) return;
+        const dx = event.clientX - action.startX;
+        const dy = event.clientY - action.startY;
+        if (action.mode === "drag") {
+          let nextLeft = action.left + dx;
+          let nextTop = action.top + dy;
+          nextLeft = snap(nextLeft + action.width / 2, 210) - action.width / 2;
+          nextTop = snap(nextTop + action.height / 2, 350) - action.height / 2;
+          action.layer.style.left = `${Math.max(0, Math.min(420 - action.width, nextLeft))}px`;
+          action.layer.style.top = `${Math.max(0, Math.min(700 - action.height, nextTop))}px`;
+        } else {
+          action.layer.style.width = `${Math.max(24, Math.min(420 - action.left, action.width + dx))}px`;
+          action.layer.style.height = `${Math.max(20, Math.min(700 - action.top, action.height + dy))}px`;
+        }
+        syncFields();
+      });
+
+      window.addEventListener("pointerup", () => {
+        action = null;
+      });
+
+      Object.values(fields).forEach((field) => field.addEventListener("input", applyFields));
+
+      document.querySelectorAll("[data-select]").forEach((button) => {
+        button.addEventListener("click", () => selectLayer(document.querySelector(`[data-layer="${button.dataset.select}"]`)));
+      });
+
+      document.querySelectorAll(".sample").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll(".sample").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+          photo.src = samples[button.dataset.sample];
+        });
+      });
+
+      document.querySelectorAll("[data-frame]").forEach((button) => {
+        button.addEventListener("click", () => {
+          document.querySelectorAll("[data-frame]").forEach((item) => item.classList.remove("active"));
+          button.classList.add("active");
+        });
+      });
+
+      document.querySelector("#reset").addEventListener("click", () => location.reload());
+      document.querySelector("#save").addEventListener("click", () => alert("原型里只预览保存动作；真实实现会写入 layout template JSON。"));
+
+      syncFields();
+    </script>
+  </body>
+</html>

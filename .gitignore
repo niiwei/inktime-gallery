@@ -1,9 +1,16 @@
 node_modules/
 dist/
-data/
+release/
+/data/
 *.tsbuildinfo
 vite.config.js
 vite.config.d.ts
 .env
 .env.*
 server-dev*.log
+.DS_Store
+tmp/
+*.log
+*.sqlite
+*.sqlite-*
+*.db

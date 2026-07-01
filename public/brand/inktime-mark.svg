@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="InkTime">
+  <defs>
+    <linearGradient id="shell" x1="21" y1="12" x2="111" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1f4a3e"/>
+      <stop offset="1" stop-color="#0b2f29"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="64" y1="30" x2="64" y2="66" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffd66b"/>
+      <stop offset="1" stop-color="#f59a2d"/>
+    </linearGradient>
+    <linearGradient id="water" x1="64" y1="65" x2="64" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#214d43"/>
+      <stop offset="1" stop-color="#102f2b"/>
+    </linearGradient>
+  </defs>
+  <rect x="10" y="10" width="108" height="108" rx="30" fill="url(#shell)"/>
+  <circle cx="64" cy="64" r="42" fill="#fff7df"/>
+  <clipPath id="portal">
+    <circle cx="64" cy="64" r="35"/>
+  </clipPath>
+  <g clip-path="url(#portal)">
+    <rect x="29" y="29" width="70" height="38" fill="url(#sky)"/>
+    <rect x="29" y="66" width="70" height="36" fill="url(#water)"/>
+    <circle cx="64" cy="62" r="15" fill="#fff4d7"/>
+    <rect x="29" y="66" width="70" height="6" fill="#ea7d31"/>
+    <path d="M50 73c7 3 21 3 28 0 2-1 2 2 0 4-7 5-21 5-28 0-2-2-2-5 0-4Z" fill="#ffd45f"/>
+    <path d="M54 83c5 2 15 2 20 0 2-1 2 2 0 4-5 4-15 4-20 0-2-2-2-5 0-4Z" fill="#f6b83e"/>
+    <path d="M58 94c3 1 9 1 12 0 2-1 2 2 0 3-3 3-9 3-12 0-2-1-2-4 0-3Z" fill="#f2a933"/>
+  </g>
+  <circle cx="64" cy="64" r="35" fill="none" stroke="#fff7df" stroke-width="5"/>
+</svg>

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="InkTime app icon">
+  <defs>
+    <linearGradient id="shell" x1="168" y1="84" x2="876" y2="944" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#214f42"/>
+      <stop offset="1" stop-color="#082d28"/>
+    </linearGradient>
+    <linearGradient id="sky" x1="512" y1="244" x2="512" y2="526" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffd86d"/>
+      <stop offset="1" stop-color="#f79b2f"/>
+    </linearGradient>
+    <linearGradient id="water" x1="512" y1="526" x2="512" y2="804" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#245246"/>
+      <stop offset="1" stop-color="#102f2b"/>
+    </linearGradient>
+  </defs>
+  <rect x="68" y="68" width="888" height="888" rx="220" fill="url(#shell)"/>
+  <circle cx="512" cy="512" r="340" fill="#fff7df"/>
+  <clipPath id="portal">
+    <circle cx="512" cy="512" r="284"/>
+  </clipPath>
+  <g clip-path="url(#portal)">
+    <rect x="228" y="228" width="568" height="300" fill="url(#sky)"/>
+    <rect x="228" y="528" width="568" height="284" fill="url(#water)"/>
+    <circle cx="512" cy="500" r="118" fill="#fff4d7"/>
+    <rect x="228" y="528" width="568" height="48" fill="#ea7d31"/>
+    <path d="M390 588c58 26 186 26 244 0 20-9 26 18 8 36-70 58-190 58-260 0-18-18-12-45 8-36Z" fill="#ffd45f"/>
+    <path d="M424 675c42 19 134 19 176 0 18-8 22 18 7 32-52 45-138 45-190 0-15-14-11-40 7-32Z" fill="#f6b83e"/>
+    <path d="M456 762c28 13 84 13 112 0 15-7 18 14 5 26-34 31-88 31-122 0-13-12-10-33 5-26Z" fill="#f2a933"/>
+  </g>
+  <circle cx="512" cy="512" r="284" fill="none" stroke="#fff7df" stroke-width="42"/>
+</svg>

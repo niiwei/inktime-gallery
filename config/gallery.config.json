@@ -1,14 +1,10 @@
 {
-  "imageDir": "C:\\Users\\29982\\Pictures\\photo_test",
-  "providerBaseUrl": "https://dashscope.aliyuncs.com/api/v1",
-  "apiKeyEnvName": "DASHSCOPE_API_KEY",
-  "model": "qwen3.5-flash",
+  "imageDir": "",
+  "providerBaseUrl": "http://127.0.0.1:11434",
+  "apiKeyEnvName": "",
+  "model": "qwen3-vl:8b",
   "modelOptions": [
-    "qwen3.5-flash",
-    "qwen3.6-flash",
-    "qwen3.5-plus",
-    "qwen3.7-plus",
-    "qwen3.7-plus-2026-05-26"
+    "qwen3-vl:8b"
   ],
   "excludeScreenshots": true,
   "excludeNamePatterns": [
@@ -19,14 +15,18 @@
     "截图",
     "屏幕截图"
   ],
-  "maxImagesPerRun": 8,
-  "maxConcurrentImages": 2,
+  "maxImagesPerRun": 5,
+  "maxConcurrentImages": 1,
   "dataDir": "data",
-  "databaseFile": "gallery-db.json",
+  "databaseFile": "gallery.sqlite",
   "renderFrameMode": "adaptive",
   "renderWidth": 480,
   "renderHeight": 800,
   "footerHeight": 112,
+  "wallpaperWidth": 3024,
+  "wallpaperHeight": 1964,
+  "wallpaperAutoIntervalHours": 1,
+  "wallpaperCollection": "representative",
   "promptVersion": "memory-v2",
   "scoringPrompt": "你是一个个人相册照片回忆度评估助手，目标是判断一张照片将来是否值得被重新看见。\n请只输出 JSON，不要输出 Markdown，不要输出解释。\n字段：caption 中文 80~200 字；type 中文标签数组；memory_score 0~100；reason 中文不超过 80 字。\n回忆度不是照片好不好看，而是它和个人生活、关系、经历、情绪、地点、时间、事件之间的连接强度。\n高回忆度照片通常包含：重要人物或亲密关系；旅行、聚会、毕业、搬家、生日、节日等事件；少见场景或很难复现的瞬间；能唤起明确情绪的表情、动作、物件或环境；能代表某段生活状态的日常细节。\n中等回忆度照片通常是普通但有生活痕迹的记录，例如一顿饭、一次出门、某件新买的东西、家里某个角落、一次普通自拍。若它能让人想起具体的人、地点或阶段，可以适当提高分数。\n低回忆度照片通常包括：纯截图、账单、广告、表情包、模糊废片、重复快门中信息量较少的一张、没有明确主体的杂物、临时保存的资料图。\n重复或相似照片中，如果画面信息接近，应优先给人物表情更自然、事件信息更完整、故事线索更多的一张更高分。\n评分参考：90~100 非常值得长期保留；75~89 有明确回忆价值；55~74 普通生活记录但仍有意义；35~54 信息较弱；0~34 基本不值得进入相框轮播。",
   "sideCaptionPrompt": "你是一位为电子相框撰写中文短句的文案助手。\n目标不是复述画面，而是为照片补上一点画外之意。\n只输出一句中文短句，不要引号，不要解释，不要换行。\n长度 8 到 24 个汉字，克制、自然、有余味，可以轻微幽默，但不要鸡汤。\n避免使用“这张照片”“这一刻”“时光”“岁月”“世界”“治愈”等套话。"

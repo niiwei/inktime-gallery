@@ -3,6 +3,8 @@
 
   # InkTime Gallery
 
+  English | [简体中文](README.zh-CN.md)
+
   A local-first macOS photo memory gallery that turns your own pictures into AI-written captions, printable frame cards, and rotating desktop wallpapers.
 
   [![Build](https://github.com/niiwei/inktime/actions/workflows/build.yml/badge.svg)](https://github.com/niiwei/inktime/actions/workflows/build.yml)

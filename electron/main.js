@@ -44,7 +44,7 @@ if (!hasSingleInstanceLock) {
 } else {
   app.whenReady().then(bootstrap).catch((error) => {
     logError("bootstrap", error);
-    dialog.showErrorBox("InkTime 启动失败", error instanceof Error ? error.message : String(error));
+    dialog.showErrorBox("InkTime Gallery 启动失败", error instanceof Error ? error.message : String(error));
   });
 }
 
@@ -87,7 +87,7 @@ async function createMainWindow() {
     height: 880,
     minWidth: 980,
     minHeight: 680,
-    title: "InkTime",
+    title: "InkTime Gallery",
     backgroundColor: "#121412",
     icon: iconPath,
     show: false,
@@ -114,16 +114,16 @@ function createMenu() {
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
-        label: "InkTime",
+        label: "InkTime Gallery",
         submenu: [
-          { label: "显示 InkTime", accelerator: "CommandOrControl+0", click: showMainWindow },
+          { label: "显示 InkTime Gallery", accelerator: "CommandOrControl+0", click: showMainWindow },
           { label: "随机设置壁纸", accelerator: "CommandOrControl+R", click: setRandomWallpaper },
           { type: "separator" },
           { label: "打开配置目录", click: () => shell.openPath(userDataDir) },
           { label: "打开数据目录", click: () => shell.openPath(runtimeDataDir) },
           { label: "打开图片目录", click: openImageDirectory },
           { type: "separator" },
-          { role: "quit", label: "退出 InkTime" },
+          { role: "quit", label: "退出 InkTime Gallery" },
         ],
       },
       {
@@ -140,15 +140,15 @@ function createMenu() {
 
 function createTray() {
   tray = new Tray(createTrayIcon());
-  tray.setToolTip("InkTime");
+  tray.setToolTip("InkTime Gallery");
   tray.setContextMenu(
     Menu.buildFromTemplate([
-      { label: "显示 InkTime", click: showMainWindow },
+      { label: "显示 InkTime Gallery", click: showMainWindow },
       { label: "随机设置壁纸", click: setRandomWallpaper },
       { type: "separator" },
       { label: "打开配置目录", click: () => shell.openPath(userDataDir) },
       { label: "打开数据目录", click: () => shell.openPath(runtimeDataDir) },
-      { label: "退出 InkTime", click: () => app.quit() },
+      { label: "退出 InkTime Gallery", click: () => app.quit() },
     ]),
   );
   tray.on("click", showMainWindow);
@@ -174,7 +174,7 @@ async function setRandomWallpaper(options = {}) {
     logMessage(`wallpaper update start reason=${reason}`);
     const data = await fetchJson(`${appUrl}/api/wallpaper/random`, { method: "POST" });
     logMessage(`wallpaper update success reason=${reason} file=${data.fileName || ""} photo=${data.photoId || ""} applied=${data.appliedPath || ""}`);
-    if (!options.silent) showNotification("壁纸已更新", data.fileName || "InkTime");
+    if (!options.silent) showNotification("壁纸已更新", data.fileName || "InkTime Gallery");
   } catch (error) {
     logError(`wallpaper update failed reason=${reason}`, error);
     if (!options.silent) dialog.showErrorBox("壁纸设置失败", error instanceof Error ? error.message : String(error));
@@ -380,7 +380,7 @@ async function waitForServer() {
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
-  throw new Error("InkTime server did not start in time.");
+  throw new Error("InkTime Gallery server did not start in time.");
 }
 
 async function prepareRuntimeFiles() {

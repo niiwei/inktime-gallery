@@ -1,4 +1,4 @@
-# InkTime Architecture
+# InkTime Gallery Architecture
 
 This document describes the current local-first macOS app architecture.
 
@@ -87,7 +87,7 @@ Automatic wallpaper changes are scheduled by a macOS LaunchAgent managed from `e
 - every 2/4/8 hours: whole hours divisible by the interval;
 - disabled: the LaunchAgent is unloaded and removed.
 
-The LaunchAgent runs `scripts/set-random-wallpaper.js` directly, so scheduled wallpaper changes do not depend on the InkTime window or embedded server being open. The script reads the runtime config and SQLite database, applies the wallpaper, verifies the actual macOS desktop path, and only then writes `wallpaper_history`.
+The LaunchAgent runs `scripts/set-random-wallpaper.js` directly, so scheduled wallpaper changes do not depend on the InkTime Gallery window or embedded server being open. The script reads the runtime config and SQLite database, applies the wallpaper, verifies the actual macOS desktop path, and only then writes `wallpaper_history`.
 
 ## Gallery Collections
 

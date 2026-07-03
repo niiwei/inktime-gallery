@@ -1,8 +1,8 @@
-# InkTime Personal Roadmap
+# InkTime Gallery Personal Roadmap
 
-This document tracks future work for using InkTime as a personal large-scale photo processing and wallpaper manager.
+This document tracks future work for using InkTime Gallery as a personal large-scale photo processing and wallpaper manager.
 
-Treat this file as the living product-planning document for InkTime. It is safe to edit directly when you want to record feature ideas, priorities, UX notes, or longer-term product direction.
+Treat this file as the living product-planning document for InkTime Gallery. It is safe to edit directly when you want to record feature ideas, priorities, UX notes, or longer-term product direction.
 
 ## Current Baseline
 

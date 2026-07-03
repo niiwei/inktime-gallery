@@ -17,7 +17,7 @@ First public macOS preview release.
 
 ## Download
 
-- `InkTime.dmg` for Apple Silicon macOS.
+- `InkTime Gallery.dmg` for Apple Silicon macOS.
 
 ## Notes
 

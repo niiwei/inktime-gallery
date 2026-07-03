@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/brand/inktime-mark.svg" alt="InkTime logo" width="96" height="96">
+  <img src="public/brand/inktime-mark.svg" alt="InkTime Gallery logo" width="96" height="96">
 
   # InkTime Gallery
 
@@ -13,13 +13,13 @@
   [![Ollama](https://img.shields.io/badge/Ollama-ready-0f766e.svg)](#local-models)
 </div>
 
-![InkTime gallery](docs/images/gallery-main.png)
+![InkTime Gallery](docs/images/gallery-main.png)
 
-## Why InkTime
+## Why InkTime Gallery
 
 Photo libraries grow quietly. The moments you actually want to revisit get buried under screenshots, bursts, meals, receipts, and random saves. By the time you decide to organize them, it is hard to know where to start.
 
-InkTime is a local-first macOS photo memory assistant. It scans a folder, lets a vision model find meaningful moments, writes restrained Chinese captions, renders frame cards, and rotates your desktop wallpaper on a whole-hour schedule.
+InkTime Gallery is a local-first macOS photo memory assistant. It scans a folder, lets a vision model find meaningful moments, writes restrained Chinese captions, renders frame cards, and rotates your desktop wallpaper on a whole-hour schedule.
 
 It does not require a cloud album or a hosted backend. Your photos, SQLite database, rendered images, and wallpaper history stay on your Mac. If you use a local Ollama model, image understanding can stay fully local too.
 
@@ -27,14 +27,13 @@ It does not require a cloud album or a hosted backend. Your photos, SQLite datab
 
 | Capability | What you get |
 | --- | --- |
-| Memory gallery | Scan a full photo folder and clearly separate pending, processed, skipped, failed, and curated photos. |
-| AI photo reading | Generate a Chinese title, tags, memory score, reason, and short bottom caption. |
-| Fast curation | Browse with left/right arrows and press `F` to curate or uncurate. |
-| Skip reasons | Screenshots, similar bursts, and low-value images show why they were skipped. |
-| Frame rendering | Turn photos into frame-style images with title, date, and caption. |
-| Layout editing | Drag, resize, and delete layers like a lightweight Figma canvas, then rerender in bulk. |
-| Wallpaper rotation | Generate Mac wallpapers from curated or AI-processed photos and rotate them automatically. |
-| Local models | Works with Ollama by default, with OpenAI-compatible providers available in config. |
+| Memory scoring | Scores how strongly a photo connects to people, places, events, and lived context, not just whether it looks pretty. |
+| Poetic short captions | Adds a restrained, natural Chinese line that gives ordinary photos a better reason to be revisited. |
+| Gallery management | Keeps all photos, representative photos, AI results, curated photos, skipped items, and failures in one clear gallery. |
+| Free layout editing | Drag, resize, delete layers, and save frame templates instead of typing every layout number by hand. |
+| API / local model support | Works with OpenAI-compatible APIs and local vision models such as Ollama, so you can choose between convenience and privacy. |
+| macOS wallpaper rotation | Generates Mac wallpapers from curated or AI-processed photos and rotates them on a whole-hour schedule. |
+| Frame rendering | Turns photos, titles, dates, and captions into complete frame-style images for saving, sharing, or wallpaper use. |
 
 ## Product Tour
 
@@ -42,25 +41,25 @@ It does not require a cloud album or a hosted backend. Your photos, SQLite datab
 
 | Curated gallery | Photo detail |
 | --- | --- |
-| <img src="docs/images/gallery-main.png" alt="InkTime curated gallery" width="420"> | <img src="docs/images/photo-detail.png" alt="InkTime photo detail" width="420"> |
+| <img src="docs/images/gallery-main.png" alt="InkTime Gallery curated gallery" width="420"> | <img src="docs/images/photo-detail.png" alt="InkTime Gallery photo detail" width="420"> |
 
 ### Settings And Prompts
 
 | Model settings | Prompt settings |
 | --- | --- |
-| <img src="docs/images/model-settings.png" alt="InkTime model settings" width="360"> | <img src="docs/images/prompt-settings.png" alt="InkTime prompt settings" width="360"> |
+| <img src="docs/images/model-settings.png" alt="InkTime Gallery model settings" width="360"> | <img src="docs/images/prompt-settings.png" alt="InkTime Gallery prompt settings" width="360"> |
 
 ### Frames And Wallpapers
 
 | Frame layout editor | Mac wallpaper output |
 | --- | --- |
-| <img src="docs/images/layout-editor.png" alt="InkTime frame layout editor" width="420"> | <img src="docs/images/mac-wallpaper.png" alt="InkTime Mac wallpaper output" width="420"> |
+| <img src="docs/images/layout-editor.png" alt="InkTime Gallery frame layout editor" width="420"> | <img src="docs/images/mac-wallpaper.png" alt="InkTime Gallery Mac wallpaper output" width="420"> |
 
 ## Download
 
 The recommended user install is a GitHub Release asset:
 
-- [Download InkTime.dmg](https://github.com/niiwei/inktime/releases/latest)
+- [Download InkTime Gallery](https://github.com/niiwei/inktime/releases/latest)
 
 Current release notes:
 
@@ -72,10 +71,10 @@ Current release notes:
 
 For end users:
 
-1. Download `InkTime.dmg` from [Releases](https://github.com/niiwei/inktime/releases).
-2. Open the DMG and move `InkTime.app` into `Applications`.
+1. Download `InkTime Gallery.dmg` from [Releases](https://github.com/niiwei/inktime/releases).
+2. Open the DMG and move `InkTime Gallery.app` into `Applications`.
 3. Start Ollama and make sure your vision model is available.
-4. Open InkTime, choose a photo folder, scan, then process selected photos.
+4. Open InkTime Gallery, choose a photo folder, scan, then process selected photos.
 
 For developers:
 
@@ -102,12 +101,12 @@ For online providers, copy [.env.example](.env.example) and set the relevant API
 
 ## How It Runs
 
-InkTime is one app with two running modes:
+InkTime Gallery is one app with two running modes:
 
 | Mode | For | Meaning |
 | --- | --- | --- |
 | Development mode | Developers | Frontend, local API, and Electron shell run separately for debugging. |
-| Packaged app | End users | Download `InkTime.app` or `InkTime.dmg` and launch it like a normal Mac app. |
+| Packaged app | End users | Download `InkTime Gallery.app` or `InkTime Gallery.dmg` and launch it like a normal Mac app. |
 
 Internal layers:
 
@@ -132,7 +131,7 @@ The repository does not include your personal photos, runtime SQLite database, g
 
 Automatic wallpaper rotation is handled by macOS, not by an always-running app timer.
 
-InkTime installs or updates this LaunchAgent:
+InkTime Gallery installs or updates this LaunchAgent:
 
 ```text
 ~/Library/LaunchAgents/com.inktime.gallery.wallpaper.plist
@@ -164,7 +163,7 @@ npm run electron:dist  # Build a distributable DMG
 ├── assets/                # App icons and tray assets
 ├── public/                # Public static assets
 ├── docs/                  # Architecture, roadmap, design notes, and README screenshots
-└── reference/InkTime/     # Read-only upstream reference material
+└── reference/InkTime/     # Read-only local copy of dai-hongtao/InkTime
 ```
 
 ## Roadmap
@@ -193,6 +192,6 @@ Distributed under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Acknowledgments
 
-- Upstream reference: [InkTime](reference/InkTime/)
+- Reference project: [dai-hongtao/InkTime](https://github.com/dai-hongtao/InkTime)
 - README structure inspired by [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
 - Markdown syntax reference: [guodongxiaren/README](https://github.com/guodongxiaren/README)

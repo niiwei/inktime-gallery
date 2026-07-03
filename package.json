@@ -27,7 +27,7 @@
   },
   "build": {
     "appId": "com.inktime.gallery",
-    "productName": "InkTime",
+    "productName": "InkTime Gallery",
     "asar": true,
     "asarUnpack": [
       "node_modules/sharp/**",

@@ -1,6 +1,8 @@
-# InkTime Upstream Reading Notes
+# InkTime Gallery Upstream Reading Notes
 
-参考仓库：`reference/InkTime`
+参考项目：[dai-hongtao/InkTime](https://github.com/dai-hongtao/InkTime)
+
+本仓库中的 `reference/InkTime` 是该参考项目的本地只读副本，用于研究和对照实现。
 
 ## Repository Map
 - `analyze_photos.py`: 扫描相册，读取 EXIF，把图片转成 base64，调用 OpenAI 兼容 VLM，生成照片描述、类型、回忆度、美观度、理由、一句话文案，并写入 SQLite。

@@ -398,7 +398,7 @@ export function App() {
       setProgress(nextProgress);
       return nextProgress;
     } catch {
-      setMessage("暂时连接不上本地服务，请稍后重试或重新打开 InkTime。");
+      setMessage("暂时连接不上本地服务，请稍后重试或重新打开 InkTime Gallery。");
       return null;
     }
   }
@@ -572,7 +572,7 @@ export function App() {
           <div className="brandBlock">
             <span className="appMark" aria-hidden="true" />
             <div>
-              <h1>InkTime</h1>
+              <h1>InkTime Gallery</h1>
               <p>照片记忆与壁纸</p>
             </div>
           </div>
@@ -817,7 +817,7 @@ export function App() {
             ) : (
               <section className="emptyPanel">
                 <h2>还没有全量图片清单</h2>
-                <p>先扫描目录，InkTime 会把文件夹里的图片写入本地台账，再显示处理状态和跳过原因。</p>
+                <p>先扫描目录，InkTime Gallery 会把文件夹里的图片写入本地台账，再显示处理状态和跳过原因。</p>
               </section>
             )
           ) : filteredItems.length ? (
@@ -996,7 +996,7 @@ export function App() {
                   </select>
                 </label>
               </div>
-              <p className="settingsHint">自动换壁纸由 macOS LaunchAgent 按整点触发；InkTime 会根据这里的设置安装或卸载系统任务。</p>
+              <p className="settingsHint">自动换壁纸由 macOS LaunchAgent 按整点触发；InkTime Gallery 会根据这里的设置安装或卸载系统任务。</p>
 
               <label>
                 回忆度提示词

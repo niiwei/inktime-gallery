@@ -1,6 +1,6 @@
-# InkTime Brand System
+# InkTime Gallery Brand System
 
-InkTime 的视觉身份以“夕阳记忆窗口”为核心：圆形窗口代表回看照片的入口，夕阳金色代表温暖的记忆与自动轮换的壁纸。
+InkTime Gallery 的视觉身份以“夕阳记忆窗口”为核心：圆形窗口代表回看照片的入口，夕阳金色代表温暖的记忆与自动轮换的壁纸。
 
 ## Tokens
 

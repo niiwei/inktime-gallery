@@ -7,7 +7,7 @@
 
   Turn the local photos worth revisiting into a living memory gallery on your Mac.
 
-  [![Build](https://github.com/niiwei/inktime/actions/workflows/build.yml/badge.svg)](https://github.com/niiwei/inktime/actions/workflows/build.yml)
+  [![Build](https://github.com/niiwei/inktime-gallery/actions/workflows/build.yml/badge.svg)](https://github.com/niiwei/inktime-gallery/actions/workflows/build.yml)
   [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
   [![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-black.svg)](#download)
   [![Ollama](https://img.shields.io/badge/Ollama-ready-0f766e.svg)](#local-models)
@@ -59,7 +59,7 @@ It does not require a cloud album or a hosted backend. Your photos, SQLite datab
 
 The recommended user install is a GitHub Release asset:
 
-- [Download InkTime Gallery](https://github.com/niiwei/inktime/releases/latest)
+- [Download InkTime Gallery](https://github.com/niiwei/inktime-gallery/releases/latest)
 
 Current release notes:
 
@@ -71,7 +71,7 @@ Current release notes:
 
 For end users:
 
-1. Download `InkTime Gallery.dmg` from [Releases](https://github.com/niiwei/inktime/releases).
+1. Download `InkTime Gallery.dmg` from [Releases](https://github.com/niiwei/inktime-gallery/releases).
 2. Open the DMG and move `InkTime Gallery.app` into `Applications`.
 3. Start Ollama and make sure your vision model is available.
 4. Open InkTime Gallery, choose a photo folder, scan, then process selected photos.

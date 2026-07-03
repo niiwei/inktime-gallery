@@ -7,12 +7,12 @@
   "author": "InkTime Gallery contributors",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/niiwei/inktime.git"
+    "url": "git+ssh://git@github.com/niiwei/inktime-gallery.git"
   },
   "bugs": {
-    "url": "https://github.com/niiwei/inktime/issues"
+    "url": "https://github.com/niiwei/inktime-gallery/issues"
   },
-  "homepage": "https://github.com/niiwei/inktime#readme",
+  "homepage": "https://github.com/niiwei/inktime-gallery#readme",
   "type": "module",
   "main": "electron/main.js",
   "scripts": {

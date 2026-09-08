@@ -1,7 +1,7 @@
 <div align="center">
   <img src="public/brand/inktime-mark.svg" alt="InkTime Gallery logo" width="96" height="96">
 
-  # InkTime Gallery
+  # AI 照片画廊 InkTime Gallery
 
   简体中文 | [English](README.en.md)
 
@@ -71,7 +71,7 @@ InkTime Gallery 是一个本地优先的 Mac 照片回忆助手。它扫描你�
 
 普通用户：
 
-1. 从 [Releases](https://github.com/niiwei/inktime-gallery/releases) 下载 `InkTime Gallery.dmg`。
+1. 从 [Releases](https://github.com/niiwei/inktime-gallery/releases) 下载最新的 macOS DMG 安装包。
 2. 打开 DMG，把 `InkTime Gallery.app` 拖进 `Applications`。
 3. 启动 Ollama，并确保本地视觉模型已经可用。
 4. 打开 InkTime Gallery，选择照片目录，先扫描，再处理选中的图片。
@@ -104,7 +104,7 @@ InkTime Gallery 不是两个应用，而是同一个应用的两种运行形态�
 | 形态 | 适合谁 | 怎么理解 |
 | --- | --- | --- |
 | 开发模式 | 开发者 | 前端、本地 API、Electron 分开跑，方便调试。 |
-| 打包 App | 普通用户 | 下载 `InkTime Gallery.app` 或 `InkTime Gallery.dmg`，双击启动。 |
+| 打包 App | 普通用户 | 从 Releases 下载最新的 macOS DMG 安装包，安装后双击 `InkTime Gallery.app` 启动。 |
 
 内部结构：
 

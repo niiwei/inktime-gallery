@@ -1,7 +1,7 @@
 <div align="center">
   <img src="public/brand/inktime-mark.svg" alt="InkTime Gallery logo" width="96" height="96">
 
-  # InkTime Gallery
+  # AI 照片画廊 InkTime Gallery
 
   [简体中文](README.md) | English
 
@@ -71,7 +71,7 @@ Current release notes:
 
 For end users:
 
-1. Download `InkTime Gallery.dmg` from [Releases](https://github.com/niiwei/inktime-gallery/releases).
+1. Download the latest macOS DMG installer from [Releases](https://github.com/niiwei/inktime-gallery/releases).
 2. Open the DMG and move `InkTime Gallery.app` into `Applications`.
 3. Start Ollama and make sure your vision model is available.
 4. Open InkTime Gallery, choose a photo folder, scan, then process selected photos.
@@ -106,7 +106,7 @@ InkTime Gallery is one app with two running modes:
 | Mode | For | Meaning |
 | --- | --- | --- |
 | Development mode | Developers | Frontend, local API, and Electron shell run separately for debugging. |
-| Packaged app | End users | Download `InkTime Gallery.app` or `InkTime Gallery.dmg` and launch it like a normal Mac app. |
+| Packaged app | End users | Download the latest macOS DMG installer from Releases, then launch `InkTime Gallery.app` like a normal Mac app. |
 
 Internal layers:
 

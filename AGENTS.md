@@ -13,7 +13,7 @@
 - `src/data/`: 示例数据、类型定义、静态 mock。
 - `config/`: 默认配置；打包 App 运行时会复制到 `~/Library/Application Support/inktime-gallery/config/`。
 - `data/`: 开发态数据库、渲染图和壁纸输出；打包 App 运行时使用用户目录下的 `data/`。
-- `public/samples/`: 本地样例图片。
+- `public/brand/`: README 与应用共用的品牌标识资源。
 - `docs/`: 设计记录、上游阅读笔记和实现取舍。
 
 ## Naming

@@ -17,7 +17,7 @@ First public macOS preview release.
 
 ## Download
 
-- `InkTime Gallery.dmg` for Apple Silicon macOS.
+- Current uploaded asset: `InkTime-0.1.0-arm64.dmg` for Apple Silicon macOS.
 
 ## Notes
 

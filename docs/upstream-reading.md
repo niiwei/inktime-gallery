@@ -6,7 +6,7 @@
 
 ## Repository Map
 - `analyze_photos.py`: 扫描相册，读取 EXIF，把图片转成 base64，调用 OpenAI 兼容 VLM，生成照片描述、类型、回忆度、美观度、理由、一句话文案，并写入 SQLite。
-- `render_daily_photo.py`: 从 `photos.db` 读取评分结果，按“历史上的今天”选片，渲染 480x800 图片，再做四色墨水屏抖动并导出 `.bin` / `.h`。
+- `render_daily_photo.py`: 从 `photos.db` 读取评分结果，按月日匹配逻辑选片，渲染 480x800 图片，再做四色墨水屏抖动并导出 `.bin` / `.h`。
 - `render_daily_photo_133c.py`: 另一个屏幕尺寸/设备版本的渲染脚本。
 - `server.py`: Flask 服务，提供 review WebUI、模拟器、图片静态读取、ESP32 下载 `.bin` 的接口。
 - `esp32/`: ESP32 固件、屏幕驱动头文件、PCB 资料。复刻版当前不使用。
@@ -35,7 +35,7 @@
 ## Selection And Rendering
 `render_daily_photo.py` 的选择逻辑围绕电子相框：
 1. 从 EXIF 日期提取 `MM-DD`。
-2. 先找今天这个月日的高分照片。
+2. 先找当前日期对应月日的高分照片。
 3. 若没有超过阈值的候选，就按日期向前回溯。
 4. 仍没有则用全局最高分兜底。
 5. 渲染时用 480x800 画布，上方照片铺满裁剪，底部 100px 放文案、日期、地点。
@@ -61,4 +61,4 @@
 - Floyd-Steinberg 抖动。
 - `.bin` / `.h` 导出。
 - ESP32 固件、下载密钥、定时刷新。
-- “历史上的今天”自动选片。
+- 按月日匹配的自动选片。

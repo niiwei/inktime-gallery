@@ -1,11 +1,9 @@
-import { execFile } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-
-const execFileAsync = promisify(execFile);
+import { latestScheduledBoundary, selectWallpaperRow } from "../server/platform/wallpaper-selection.js";
+import { applyDesktopWallpaper } from "../server/platform/desktop-wallpaper.js";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const args = parseArgs(process.argv.slice(2));
 const configDir = path.resolve(args.configDir || process.env.INKTIME_CONFIG_DIR || path.join(rootDir, "config"));
@@ -21,9 +19,16 @@ try {
   const wallpapersDir = path.join(getDataDir(config), "wallpapers");
   db = new DatabaseSync(dbPath);
 
-  const row = selectWallpaperRow(db, config);
+  const boundary = latestScheduledBoundary(config.wallpaperAutoIntervalHours);
+  let alreadyApplied = false;
+  if (process.env.INKTIME_SCHEDULED_WALLPAPER === "1") {
+    const last = db.prepare("select set_at from wallpaper_history order by set_at desc limit 1").get();
+    alreadyApplied = !boundary || (last && Date.parse(last.set_at) >= boundary.getTime());
+  }
+  const row = alreadyApplied ? null : selectWallpaperRow(db, config);
   if (!row) {
-    log("No wallpaper candidates found.");
+    log(alreadyApplied ? "Scheduled boundary already applied or disabled." : "No wallpaper candidates found.");
+    if (!alreadyApplied) writeStatus({ status: "empty", lastError: "还没有可用的壁纸图片。" });
     process.exitCode = 0;
   } else {
     const wallpaperPath = path.join(wallpapersDir, path.basename(stripUrlQuery(row.wallpaper_url)));
@@ -35,9 +40,11 @@ try {
       wallpaperPath,
       new Date().toISOString(),
     );
+    writeStatus({ status: "ok", lastError:"", photoId: row.id, fileName: row.file_name, wallpaperPath, appliedPath });
     log(JSON.stringify({ status: "ok", photoId: row.id, fileName: row.file_name, wallpaperPath, appliedPath }));
   }
 } catch (error) {
+  writeStatus({ status: "error", lastError: error instanceof Error ? error.message : String(error) });
   logError(error);
   process.exitCode = 1;
 } finally {
@@ -49,7 +56,13 @@ function parseArgs(values) {
   for (let index = 0; index < values.length; index += 1) {
     const key = values[index];
     if (!key.startsWith("--")) continue;
-    parsed[key.slice(2).replace(/-([a-z])/g, (_match, letter) => letter.toUpperCase())] = values[index + 1] || "";
+    const name = key.slice(2).replace(/-([a-z])/g, (_match, letter) => letter.toUpperCase());
+    const next = values[index + 1];
+    if (!next || next.startsWith("--")) {
+      parsed[name] = true;
+      continue;
+    }
+    parsed[name] = next;
     index += 1;
   }
   return parsed;
@@ -68,6 +81,7 @@ function normalizeConfig(config) {
     dataDir: String(config.dataDir || "data"),
     databaseFile: normalizeDatabaseFile(config.databaseFile || "gallery.sqlite"),
     wallpaperCollection: normalizeWallpaperCollection(config.wallpaperCollection),
+    wallpaperAutoIntervalHours: Number(config.wallpaperAutoIntervalHours || 0),
   };
 }
 
@@ -84,82 +98,12 @@ function getDataDir(config) {
   return dataRoot || path.resolve(rootDir, config.dataDir);
 }
 
-function selectWallpaperRow(database, config) {
-  const latest = database.prepare("select photo_id from wallpaper_history order by set_at desc limit 1").get();
-  const source = normalizeWallpaperCollection(config.wallpaperCollection);
-  const joinCurated = source === "curated" ? "join curated_photos c on c.photo_id = p.id" : "";
-  const sourceWhere = source === "representative" ? "and p.is_representative = 1" : "";
-  const query = `select p.id, p.wallpaper_url, s.file_name
-       from processed_photos p
-       join source_photos s on s.id = p.source_id
-       ${joinCurated}
-      where p.wallpaper_url is not null and p.wallpaper_url != '' ${sourceWhere}`;
-  const row = database
-    .prepare(
-      `${query}
-        and (? is null or p.id != ?)
-      order by random()
-      limit 1`,
-    )
-    .get(latest?.photo_id || null, latest?.photo_id || null);
-  if (row || !latest?.photo_id) return row;
-  return database
-    .prepare(
-      `${query}
-      order by random()
-      limit 1`,
-    )
-    .get();
-}
-
 function stripUrlQuery(value) {
   return String(value || "").split("?")[0];
 }
 
 function createRunId() {
   return `${new Date().toISOString().replaceAll(/[-:TZ.]/g, "").slice(0, 14)}-${Math.random().toString(16).slice(2, 8)}`;
-}
-
-function escapeAppleScriptString(value) {
-  return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-}
-
-async function applyDesktopWallpaper(wallpaperPath) {
-  const escaped = escapeAppleScriptString(wallpaperPath);
-  await execFileAsync(
-    "osascript",
-    ["-e", `tell application "System Events"\nrepeat with desktopItem in desktops\nset picture of desktopItem to POSIX file "${escaped}"\nend repeat\nend tell`],
-    { timeout: 8000 },
-  );
-  await execFileAsync("killall", ["Dock"]).catch(() => {});
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    const appliedPath = await readDesktopWallpaperPath();
-    if (desktopWallpaperMatches(appliedPath, wallpaperPath)) return appliedPath;
-    await wait(500);
-  }
-  const appliedPath = await readDesktopWallpaperPath();
-  throw new Error(`macOS did not confirm wallpaper change. target=${wallpaperPath} current=${appliedPath || "unknown"}`);
-}
-
-async function readDesktopWallpaperPath() {
-  try {
-    const { stdout } = await execFileAsync("osascript", ["-e", 'tell application "System Events" to get picture of every desktop'], { timeout: 8000 });
-    return stdout.trim();
-  } catch {
-    return "";
-  }
-}
-
-function desktopWallpaperMatches(appliedPath, wallpaperPath) {
-  const expected = path.resolve(wallpaperPath);
-  return String(appliedPath || "")
-    .split(/\s*,\s*|\n/)
-    .map((value) => value.trim())
-    .some((value) => value && path.resolve(value) === expected);
-}
-
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function log(message) {
@@ -171,4 +115,14 @@ function log(message) {
 function logError(error) {
   const message = error instanceof Error ? `${error.message}\n${error.stack || ""}` : String(error);
   log(`ERROR ${message}`);
+}
+
+function writeStatus(status) {
+  try {
+    const target = path.join(getDataDir(normalizeConfig(loadConfig())), "wallpaper-status.json");
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, JSON.stringify({ ...status, updatedAt: new Date().toISOString() }, null, 2), "utf8");
+  } catch (error) {
+    log(`ERROR writing wallpaper status: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }

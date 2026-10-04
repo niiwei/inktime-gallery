@@ -9,7 +9,17 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: mac
+            runner: macos-latest
+            builder_args: --mac dmg
+          - platform: win
+            runner: windows-latest
+            builder_args: --win nsis --x64
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,5 +33,16 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Build
+      - name: Test isolated API
+        run: npm test
+
+      - name: Build web assets
         run: npm run build
+      - name: Package desktop app
+        run: npx electron-builder ${{ matrix.builder_args }} --publish never
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: inktime-${{ matrix.platform }}
+          path: release/*
+          if-no-files-found: error

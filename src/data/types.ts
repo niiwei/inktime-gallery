@@ -24,6 +24,7 @@ export type GalleryImage = {
   perceptualHash?: string;
   sourcePath: string;
   sourceUrl: string;
+  thumbnailUrl?: string;
   renderedUrl: string;
   wallpaperUrl?: string;
   scores: ImageScores;
@@ -44,6 +45,12 @@ export type GalleryImage = {
   similarGroupId?: string;
   isRepresentative?: boolean;
   isCurated?: boolean;
+  wallpaperExcluded?: boolean;
+  manualEdits?: {
+    sideCaption?: string;
+    capturedDate?: string;
+    location?: string;
+  };
   processedAt: string;
 };
 

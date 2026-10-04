@@ -19,9 +19,15 @@
 
 Photo libraries grow quietly. The moments you actually want to revisit get buried under screenshots, bursts, meals, receipts, and random saves. By the time you decide to organize them, it is hard to know where to start.
 
-InkTime Gallery is a local-first macOS photo memory assistant. It scans a folder, lets a vision model find meaningful moments, writes restrained Chinese captions, renders frame cards, and rotates your desktop wallpaper on a whole-hour schedule.
+InkTime Gallery is a local-first photo memory assistant for macOS, with a Windows 11 x64 test build in preparation. It scans a folder, lets a vision model find meaningful moments, writes restrained Chinese captions, renders frame cards, and rotates your desktop wallpaper on a whole-hour schedule.
 
-It does not require a cloud album or a hosted backend. Your photos, SQLite database, rendered images, and wallpaper history stay on your Mac. If you use a local Ollama model, image understanding can stay fully local too.
+It does not require a cloud album or a hosted backend. Your photos, SQLite database, rendered images, and wallpaper history stay on your computer. If you use a local Ollama model, image understanding can stay fully local too.
+
+## 0.2.0 test build status
+
+The upgrade adds server pagination and thumbnails, persistent tasks with pause/resume/cancel and per-photo retry, manual caption/date/location edits, group corrections, backup/restore, and cross-platform packaging. All 17 isolated tests and the production build pass. Packaged macOS background/recovery and real local-model rendering passed; a reversible macOS wallpaper set/readback smoke restored the original wallpapers.
+
+The local DMG and Windows NSIS installers are unsigned and have not been publicly released. Real 1k/10k photo-library performance, login/wake scheduling, clean installation/upgrades, and Windows 11 device acceptance remain pending. Synthetic-library benchmarks do not establish those acceptance results. See the [delivery record and installation/recovery guide](docs/upgrade-assessment-2026-10-04.md).
 
 ## What It Does
 
@@ -129,7 +135,7 @@ The repository does not include your personal photos, runtime SQLite database, g
 
 ## Wallpaper Automation
 
-Automatic wallpaper rotation is handled by macOS, not by an always-running app timer.
+Automatic wallpaper rotation uses macOS LaunchAgent or the Windows current-user Task Scheduler. New installations keep rotation disabled until the user enables it.
 
 InkTime Gallery installs or updates this LaunchAgent:
 
@@ -137,7 +143,7 @@ InkTime Gallery installs or updates this LaunchAgent:
 ~/Library/LaunchAgents/com.inktime.gallery.wallpaper.plist
 ```
 
-At the configured whole-hour schedule, macOS starts `scripts/set-random-wallpaper.js`. The script reads runtime config and SQLite directly, applies the wallpaper, verifies the actual macOS desktop path, and only then writes `wallpaper_history`.
+At the configured whole-hour schedule, macOS starts the app with `--wallpaper-once`, which runs the independent wallpaper script without opening the UI or AI queue. The script reads runtime config and SQLite directly, applies the wallpaper, verifies the actual macOS desktop path, and only then writes `wallpaper_history`.
 
 Sleeping Macs do not run scheduled tasks while asleep; the next scheduled trigger happens after the machine is awake.
 
@@ -149,6 +155,7 @@ npm run electron:dev   # Start Electron development mode
 npm run build          # Build frontend assets
 npm run electron:pack  # Package a local macOS app
 npm run electron:dist  # Build a distributable DMG
+npm run electron:dist:win  # Build NSIS x64 on a Windows runner
 ```
 
 ## Project Structure

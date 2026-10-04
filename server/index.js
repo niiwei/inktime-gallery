@@ -1,12 +1,17 @@
 import crypto from "node:crypto";
-import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import express from "express";
+import { groupBurstCandidates } from "./similarity-groups.js";
+import { prepareFontRuntime } from "./font-runtime.js";
+import { applyDesktopWallpaper } from "./platform/desktop-wallpaper.js";
+import { selectWallpaperRow } from "./platform/wallpaper-selection.js";
+import { createTaskEngine } from "./task-engine.js";
+import { installUpgradeRoutes } from "./upgrade-routes.js";
+import { migrateLibrary, effectivePhoto, queryPage, selectSourceIds } from "./library-service.js";
 import exifr from "exifr";
 import sharp from "sharp";
 import { createServer as createViteServer } from "vite";
@@ -24,7 +29,6 @@ const ollamaContextTokens = 8192;
 const ollamaImageMaxEdge = 1024;
 const modelCallTimeoutMs = 240000;
 const modelStreamIdleTimeoutMs = 90000;
-const execFileAsync = promisify(execFile);
 
 const defaultScoringPrompt = [
   "你是一个个人相册照片回忆度评估助手，目标是判断一张照片将来是否值得被重新看见。",
@@ -56,10 +60,10 @@ const defaultLayoutTemplates = {
     background: "#f8f4ec",
     elements: {
       photo: { x: 24, y: 24, width: 372, height: 500, fit: "cover", radius: 16 },
-      caption: { x: 32, y: 548, width: 270, height: 68, fontSize: 24, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#171b18", align: "left" },
-      date: { x: 32, y: 642, width: 108, height: 24, fontSize: 15, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
-      place: { x: 238, y: 642, width: 132, height: 24, fontSize: 15, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#4f5752", align: "right" },
-      score: { x: 286, y: 604, width: 84, height: 24, fontSize: 15, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#4f5752", align: "right" },
+      caption: { x: 32, y: 548, width: 270, height: 68, fontSize: 24, fontFamily: "Noto Serif CJK SC, serif", color: "#171b18", align: "left" },
+      date: { x: 32, y: 642, width: 108, height: 24, fontSize: 15, fontFamily: "Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
+      place: { x: 238, y: 642, width: 132, height: 24, fontSize: 15, fontFamily: "Noto Serif CJK SC, serif", color: "#4f5752", align: "right" },
+      score: { x: 286, y: 604, width: 84, height: 24, fontSize: 15, fontFamily: "Noto Serif CJK SC, serif", color: "#4f5752", align: "right" },
     },
   },
   landscape: {
@@ -68,10 +72,10 @@ const defaultLayoutTemplates = {
     background: "#f8f4ec",
     elements: {
       photo: { x: 24, y: 24, width: 452, height: 372, fit: "cover", radius: 16 },
-      caption: { x: 504, y: 42, width: 150, height: 130, fontSize: 24, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#171b18", align: "left" },
-      date: { x: 504, y: 328, width: 110, height: 24, fontSize: 15, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
-      place: { x: 504, y: 356, width: 110, height: 24, fontSize: 15, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
-      score: { x: 504, y: 248, width: 110, height: 24, fontSize: 15, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
+      caption: { x: 504, y: 42, width: 150, height: 130, fontSize: 24, fontFamily: "Noto Serif CJK SC, serif", color: "#171b18", align: "left" },
+      date: { x: 504, y: 328, width: 110, height: 24, fontSize: 15, fontFamily: "Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
+      place: { x: 504, y: 356, width: 110, height: 24, fontSize: 15, fontFamily: "Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
+      score: { x: 504, y: 248, width: 110, height: 24, fontSize: 15, fontFamily: "Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
     },
   },
   square: {
@@ -80,10 +84,10 @@ const defaultLayoutTemplates = {
     background: "#f8f4ec",
     elements: {
       photo: { x: 28, y: 28, width: 504, height: 372, fit: "cover", radius: 16 },
-      caption: { x: 36, y: 424, width: 330, height: 58, fontSize: 23, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#171b18", align: "left" },
-      date: { x: 36, y: 506, width: 110, height: 24, fontSize: 15, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
-      place: { x: 386, y: 506, width: 110, height: 24, fontSize: 15, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#4f5752", align: "right" },
-      score: { x: 416, y: 466, width: 84, height: 24, fontSize: 15, fontFamily: "Songti SC, Noto Serif CJK SC, serif", color: "#4f5752", align: "right" },
+      caption: { x: 36, y: 424, width: 330, height: 58, fontSize: 23, fontFamily: "Noto Serif CJK SC, serif", color: "#171b18", align: "left" },
+      date: { x: 36, y: 506, width: 110, height: 24, fontSize: 15, fontFamily: "Noto Serif CJK SC, serif", color: "#4f5752", align: "left" },
+      place: { x: 386, y: 506, width: 110, height: 24, fontSize: 15, fontFamily: "Noto Serif CJK SC, serif", color: "#4f5752", align: "right" },
+      score: { x: 416, y: 466, width: 84, height: 24, fontSize: 15, fontFamily: "Noto Serif CJK SC, serif", color: "#4f5752", align: "right" },
     },
   },
 };
@@ -106,7 +110,7 @@ const defaultConfig = {
   footerHeight: 112,
   wallpaperWidth: 3024,
   wallpaperHeight: 1964,
-  wallpaperAutoIntervalHours: 1,
+  wallpaperAutoIntervalHours: 0,
   wallpaperCollection: "representative",
   layoutTemplates: defaultLayoutTemplates,
   promptVersion: "v1",
@@ -119,11 +123,12 @@ let cachedCityGrid = null;
 let processProgress = createProcessProgress("idle");
 let sqliteDb = null;
 let sqliteDbPath = "";
-let processStopRequested = false;
 const activeModelAbortControllers = new Set();
 
 const initialConfig = await loadConfig();
 const app = express();
+const fontDirectory = await prepareFontRuntime(rootDir,getDataDir(initialConfig));
+app.use("/fonts",express.static(fontDirectory));
 
 app.use(express.json({ limit: "4mb" }));
 
@@ -134,33 +139,40 @@ app.get("/api/config", async (_req, res) => {
 
 app.put("/api/config", async (req, res) => {
   try {
+    if (req.body.wallpaperAutoIntervalHours !== undefined && ![0,1,2,4,8].includes(Number(req.body.wallpaperAutoIntervalHours))) throw new Error("轮换间隔应为 0、1、2、4 或 8 小时");
     const nextConfig = normalizeConfig(req.body ?? {});
+    if (tasks.busy) throw new Error("请先暂停并等待活动任务停止，再保存配置");
+    const currentConfig = await loadConfig();
+    if (nextConfig.databaseFile !== currentConfig.databaseFile || nextConfig.dataDir !== currentConfig.dataDir) throw new Error("数据库路径迁移请通过备份恢复，不支持直接修改");
     await writeConfig(nextConfig);
+    await globalThis.inktimeDesktop?.refreshWallpaperSchedule?.();
     res.json({ ...nextConfig, apiKeyConfigured: Boolean(resolveApiKey(nextConfig)) });
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : "配置保存失败。" });
   }
 });
 
-app.get("/api/photos", async (req, res) => {
-  const config = await loadConfig();
-  const db = await readDb(config, normalizeCollection(req.query.collection));
-  res.json(db.items);
-});
-
-app.get("/api/sources", async (req, res) => {
-  const config = await loadConfig();
-  res.json(await readSources(config, normalizeSourceStatus(req.query.status)));
+for (const sources of [false,true]) app.get(sources ? "/api/sources" : "/api/photos",async (req,res) => {
+  try {
+    const config = await loadConfig();
+    const result = queryPage(await getLibraryDb(config),req.query,sources,row => {
+      const item = sources ? rowToSourceItem(row,config) : rowToGalleryItem(row);
+      const effective = effectivePhoto(item,row);
+      return sources ? { ...effective,id:row.id,sourceId:row.id } : effective;
+    });
+    res.json(result);
+  } catch (error) { res.status(400).json({ error:error.message }); }
 });
 
 app.post("/api/sources/scan", async (_req, res) => {
   try {
     const config = await loadConfig();
+    if (tasks.busy) throw new Error("请先暂停任务再扫描");
     const files = await listImageFiles(config.imageDir);
-    await syncSourceInventory(config, files);
+    const report = await syncSourceInventory(config, files);
     const db = await getLibraryDb(config);
     await refreshSourceSkipState(config, db);
-    res.json({ total: files.length, stats: await readLibraryStats(config) });
+    res.json({ total: files.length, ...report, stats: await readLibraryStats(config) });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : "扫描失败。" });
   }
@@ -208,53 +220,10 @@ app.post("/api/wallpaper/random", async (_req, res) => {
   }
 });
 
-app.post("/api/process", async (req, res) => {
-  try {
-    if (processProgress.status === "running") {
-      res.status(409).json({ error: "已有处理任务正在运行。" });
-      return;
-    }
-    const config = await loadConfig();
-    const mode = req.body?.mode === "rerun" ? "rerun" : "new";
-    const sourceIds = Array.isArray(req.body?.sourceIds) ? req.body.sourceIds.map((id) => String(id)).filter(Boolean) : [];
-    const result = sourceIds.length ? await processSelectedSources(config, sourceIds) : mode === "rerun" ? await rerunExistingItems(config) : await processNewItems(config);
-    res.json(result);
-  } catch (error) {
-    failProcessProgress(error instanceof Error ? error.message : "处理失败。");
-    res.status(500).json({ error: error instanceof Error ? error.message : "处理失败。" });
-  }
-});
-
-app.post("/api/process/stop", (_req, res) => {
-  processStopRequested = true;
-  for (const controller of activeModelAbortControllers) controller.abort();
-  updateProcessProgress({ message: "正在停止，已完成的图片会保留。" });
-  res.json({ stopping: true });
-});
-
-app.get("/api/process/progress", (_req, res) => {
-  res.json(processProgress);
-});
-
-app.post("/api/rerender", async (req, res) => {
-  try {
-    if (processProgress.status === "running") {
-      res.status(409).json({ error: "已有处理任务正在运行。" });
-      return;
-    }
-    const config = await loadConfig();
-    const limit = sanitizePositiveInt(req.body?.limit, 0);
-    const result = await rerenderExistingItems(config, limit);
-    res.json(result);
-  } catch (error) {
-    failProcessProgress(error instanceof Error ? error.message : "重新渲染失败。");
-    res.status(500).json({ error: error instanceof Error ? error.message : "重新渲染失败。" });
-  }
-});
-
 app.post("/api/library/clear", async (_req, res) => {
   try {
     const config = await loadConfig();
+    if (tasks.busy) throw new Error("请先暂停并等待活动任务停止");
     const result = await clearLibrary(config);
     res.json(result);
   } catch (error) {
@@ -279,6 +248,75 @@ app.use("/source", async (req, res, next) => {
   return express.static(config.imageDir)(req, res, next);
 });
 
+const tasks = createTaskEngine({
+  getDb: async () => getLibraryDb(await loadConfig()),
+  processItem: processTaskImage,
+  prepareItems: async (config,check) => {
+    check();
+    const report=await syncSourceInventory(config,await listImageFiles(config.imageDir),check);
+    check();
+    const db=await getLibraryDb(config);
+    await refreshSourceSkipState(config,db);
+    return { ids:readProcessableSources(db,config.scanLimit).map(row => row.id),report };
+  },
+  regroup: rewriteProcessedGroups,
+  abort: () => { for (const controller of activeModelAbortControllers) controller.abort(); },
+  onProgress: task => { if (task) updateProcessProgress(task); },
+});
+await getLibraryDb(initialConfig);
+await tasks.recover();
+
+async function createRequestedTask(body = {}, mode = "new") {
+  if (tasks.busy && mode !== "rerender") throw new Error("已有任务正在执行，请先暂停或等待完成");
+  const config = await loadConfig();
+  const screenSize = globalThis.inktimeDesktop?.getScreen?.();
+  if (screenSize) { config.wallpaperWidth=screenSize.width; config.wallpaperHeight=screenSize.height; }
+  const db = await getLibraryDb(config);
+  let ids = Array.isArray(body.sourceIds) ? body.sourceIds.map(String) : null;
+  if (body.selection) ids = selectSourceIds(db,body.selection,true);
+  if (!ids && mode === "new") {
+    config.scanBeforeProcessing=true;
+    config.scanLimit=sanitizePositiveInt(body.limit,config.maxImagesPerRun);
+    ids=[];
+  } else if (!ids) {
+    const limit = mode === "rerender" ? sanitizePositiveInt(body.limit,2147483647) : sanitizePositiveInt(body.limit,config.maxImagesPerRun);
+    ids = db.prepare("select source_id from processed_photos order by processed_at desc,id limit ?").all(limit).map(row => row.source_id);
+  }
+  return tasks.create(config,mode,ids);
+}
+
+async function previewLayout(body) {
+  const config = await loadConfig();
+  const previewConfig = normalizeConfig({ ...config,layoutTemplates:body.layoutTemplates || config.layoutTemplates });
+  const db = await getLibraryDb(config);
+  const source = body.sourceId ? db.prepare("select * from source_photos where id=?").get(body.sourceId) : db.prepare("select * from source_photos order by id limit 1").get();
+  if (!source) throw new Error("先扫描或导入一张照片，再预览布局");
+  const row = db.prepare("select id from processed_photos where source_id=?").get(source.id);
+  const item = row ? effectivePhoto(rowToGalleryItem(readProcessedRow(db,row.id)),readProcessedRow(db,row.id)) : null;
+  const file = `preview-${crypto.randomUUID()}.png`;
+  const dir = path.join(getDataDir(config),"previews");
+  await fs.mkdir(dir,{ recursive:true });
+  const existing = await fs.readdir(dir);
+  if (existing.length > 20) for (const name of existing.slice(0,existing.length-20)) await fs.rm(path.join(dir,name),{ force:true });
+  await renderImage(source.source_path,{ side_caption:item?.sideCaption || "照片里的日常",caption:item?.caption || "",location:item?.location || source.location || "",memory_score:item?.scores.memory || 0 },path.join(dir,file),previewConfig,item?.capturedDate || source.captured_date);
+  return `/previews/${file}`;
+}
+app.use("/previews", async (_req,res,next) => { const config=await loadConfig(); return express.static(path.join(getDataDir(config),"previews"))( _req,res,next); });
+installUpgradeRoutes(app,{
+  loadConfig,getDb:getLibraryDb,tasks,createTask:createRequestedTask,rowToPhoto:rowToGalleryItem,readPhoto:readProcessedRow,
+  dataDir:getDataDir,renderPreview:previewLayout,pauseTasks:pauseActiveTasks,
+  closeDb:() => { sqliteDb?.close(); sqliteDb=null; sqliteDbPath=""; },events:() => processProgress.aguiEvents || [],
+});
+
+export async function pauseActiveTasks() { await tasks.pauseAll(); }
+let exiting = false;
+for (const signal of ["SIGTERM","SIGINT"]) process.on(signal,async () => {
+  if (exiting) return;
+  exiting=true;
+  await pauseActiveTasks();
+  process.exit(0);
+});
+
 if (isStaticServer) {
   const distDir = path.join(rootDir, "dist");
   app.use(express.static(distDir));
@@ -299,254 +337,6 @@ app.listen(serverPort, "127.0.0.1", () => {
   console.log(`InkTime Gallery running at http://127.0.0.1:${serverPort}`);
 });
 
-async function processNewItems(config) {
-  processStopRequested = false;
-  startProcessProgress("new", "正在扫描图片目录...");
-  const files = await listImageFiles(config.imageDir);
-  await syncSourceInventory(config, files);
-  const libraryDb = await getLibraryDb(config);
-  await refreshSourceSkipState(config, libraryDb);
-  const runId = createRunId();
-  const selected = readProcessableSources(libraryDb, config.maxImagesPerRun);
-  const skippedDuplicates = countSkippedSources(libraryDb);
-  updateProcessProgress({
-    message: selected.length ? "正在分析并生成图片..." : "没有发现需要处理的新图片。",
-    total: selected.length,
-    skippedDuplicates,
-  });
-
-  const results = await mapWithConcurrency(selected, config.maxConcurrentImages, async (source) => {
-    if (processStopRequested) return null;
-    updateProcessProgress({
-      currentFile: source.file_name,
-      message: `正在处理 ${source.file_name}`,
-    });
-    try {
-      markSourceStatus(libraryDb, source.id, "processing", "", "");
-      const item = await processImage(source.source_path, config, { fileHash: source.file_hash || (await hashFile(source.source_path)), runId });
-      await writeDb(config, { items: [item, ...(await readDb(config, "all")).items.filter((entry) => entry.id !== item.id)] });
-      markSourceStatus(libraryDb, source.id, "processed", "", "");
-      incrementProcessProgress({ succeeded: 1, tokenUsage: item.tokenUsage });
-      return item;
-    } catch (error) {
-      if (processStopRequested || isAbortError(error)) {
-        markSourceStatus(libraryDb, source.id, "pending", "", "");
-        appendAguiEvent("warn", `${source.file_name} 已停止，保留为未处理`);
-        return null;
-      }
-      const errorMessage = error instanceof Error ? error.message : "处理失败";
-      appendAguiEvent("error", `${source.file_name}: ${errorMessage}`);
-      markSourceStatus(libraryDb, source.id, "failed", "process_error", errorMessage);
-      incrementProcessProgress({ failed: 1 });
-      return null;
-    }
-  });
-  const processed = results.filter(Boolean);
-  if (processed.length) await rewriteProcessedGroups(config);
-
-  const result = {
-    mode: "new",
-    runId,
-    processed: processed.length,
-    skipped: countSkippedSources(libraryDb),
-    skippedDuplicates,
-    tokenTotal: processProgress.tokenTotal,
-    stopped: processStopRequested,
-  };
-  finishProcessProgress({
-    message: processStopRequested ? `已停止：本次完成 ${processed.length} 张。` : `处理完成：新增 ${processed.length} 张，跳过 ${result.skipped} 张。`,
-    processed: processed.length,
-    skipped: result.skipped,
-  });
-  processStopRequested = false;
-  return result;
-}
-
-async function processSelectedSources(config, sourceIds) {
-  processStopRequested = false;
-  startProcessProgress("selected", "正在准备选中图片...");
-  const files = await listImageFiles(config.imageDir);
-  await syncSourceInventory(config, files);
-  const libraryDb = await getLibraryDb(config);
-  await refreshSourceSkipState(config, libraryDb);
-  const runId = createRunId();
-  const selected = readSourcesByIds(libraryDb, sourceIds).slice(0, config.maxImagesPerRun);
-  updateProcessProgress({
-    message: selected.length ? "正在处理选中图片..." : "没有可处理的选中图片。",
-    total: selected.length,
-  });
-
-  const results = await mapWithConcurrency(selected, config.maxConcurrentImages, async (source) => {
-    if (processStopRequested) return null;
-    updateProcessProgress({
-      currentFile: source.file_name,
-      message: `正在处理 ${source.file_name}`,
-    });
-    try {
-      markSourceStatus(libraryDb, source.id, "processing", "", "");
-      const item = await processImage(source.source_path, config, {
-        fileHash: source.file_hash || (await hashFile(source.source_path)),
-        runId,
-      });
-      await writeDb(config, { items: [item, ...(await readDb(config, "all")).items.filter((entry) => entry.id !== item.id)] });
-      markSourceStatus(libraryDb, source.id, "processed", "", "");
-      incrementProcessProgress({ succeeded: 1, tokenUsage: item.tokenUsage });
-      return item;
-    } catch (error) {
-      if (processStopRequested || isAbortError(error)) {
-        markSourceStatus(libraryDb, source.id, "pending", "", "");
-        appendAguiEvent("warn", `${source.file_name} 已停止，保留为未处理`);
-        return null;
-      }
-      const errorMessage = error instanceof Error ? error.message : "处理失败";
-      appendAguiEvent("error", `${source.file_name}: ${errorMessage}`);
-      markSourceStatus(libraryDb, source.id, "failed", "process_error", errorMessage);
-      incrementProcessProgress({ failed: 1 });
-      return null;
-    }
-  });
-
-  const processed = results.filter(Boolean);
-  if (processed.length) await rewriteProcessedGroups(config);
-  const result = {
-    mode: "selected",
-    runId,
-    processed: processed.length,
-    skipped: selected.length - processed.length,
-    skippedDuplicates: 0,
-    tokenTotal: processProgress.tokenTotal,
-    stopped: processStopRequested,
-  };
-  finishProcessProgress({
-    message: processStopRequested ? `已停止：选中图片完成 ${processed.length} 张。` : `选中图片处理完成：${processed.length} 张。`,
-    processed: processed.length,
-    skipped: result.skipped,
-  });
-  processStopRequested = false;
-  return result;
-}
-
-async function rerunExistingItems(config) {
-  startProcessProgress("rerun", "正在读取已入库图片...");
-  const db = await readDb(config, "all");
-  const runId = createRunId();
-  const existing = [...db.items];
-  const toProcess = existing.slice(0, config.maxImagesPerRun);
-  const untouched = existing.slice(config.maxImagesPerRun);
-  updateProcessProgress({
-    message: toProcess.length ? "正在重跑已入库图片..." : "没有可重跑的图片。",
-    total: toProcess.length,
-  });
-
-  const results = await mapWithConcurrency(toProcess, config.maxConcurrentImages, async (item) => {
-    updateProcessProgress({
-      currentFile: item.fileName,
-      message: `正在重跑 ${item.fileName}`,
-    });
-    try {
-      const refreshed = await processImage(item.sourcePath, config, {
-        fileHash: item.fileHash || (await hashFile(item.sourcePath)),
-        runId,
-        existingId: item.id,
-      });
-      incrementProcessProgress({ succeeded: 1, tokenUsage: refreshed.tokenUsage });
-      return { item: refreshed, processed: true };
-    } catch {
-      incrementProcessProgress({ failed: 1 });
-      return { item, processed: false };
-    }
-  });
-
-  const processed = results.filter((result) => result.processed);
-  const nextItems = [...results.map((result) => result.item), ...untouched];
-  db.items = assignSimilarityGroups(nextItems).sort((a, b) => b.processedAt.localeCompare(a.processedAt));
-  await writeDb(config, db);
-
-  const result = {
-    mode: "rerun",
-    runId,
-    processed: processed.length,
-    skipped: Math.max(0, existing.length - processed.length),
-    skippedDuplicates: 0,
-    tokenTotal: processProgress.tokenTotal,
-  };
-  finishProcessProgress({
-    message: `重跑完成：更新 ${processed.length} 张。`,
-    processed: processed.length,
-    skipped: result.skipped,
-  });
-  return result;
-}
-
-async function rerenderExistingItems(config, limit) {
-  startProcessProgress("rerender", "正在重新生成图片...");
-  const db = await readDb(config, "all");
-  const rendersDir = getRendersDir(config);
-  const wallpapersDir = getWallpapersDir(config);
-  await fs.mkdir(rendersDir, { recursive: true });
-  await fs.mkdir(wallpapersDir, { recursive: true });
-
-  let rendered = 0;
-  let skipped = 0;
-  const total = limit > 0 ? Math.min(limit, db.items.length) : db.items.length;
-  updateProcessProgress({ total, message: total ? "正在重新生成渲染图和 Mac 壁纸..." : "没有可重新生成的图片。" });
-  for (const item of db.items) {
-    if (limit > 0 && rendered >= limit) {
-      skipped += 1;
-      continue;
-    }
-    try {
-      const renderVersion = Date.now();
-      updateProcessProgress({
-        currentFile: item.fileName,
-        message: `正在重渲染 ${item.fileName}`,
-      });
-      const stat = await fs.stat(item.sourcePath);
-      const photoDetails = await readPhotoDetails(item.sourcePath, stat);
-      const renderAnalysis = {
-        caption: item.caption || "",
-        side_caption: item.sideCaption || item.caption || "",
-        location: photoDetails.location,
-        memory_score: Number(item.scores?.memory || 0),
-      };
-      await renderImage(
-        item.sourcePath,
-        renderAnalysis,
-        path.join(rendersDir, `${item.id}.png`),
-        config,
-        photoDetails.capturedDate || item.capturedDate,
-      );
-      await renderMacWallpaper(
-        item.sourcePath,
-        renderAnalysis,
-        path.join(wallpapersDir, `${item.id}.jpg`),
-        config,
-        photoDetails.capturedDate || item.capturedDate,
-      );
-      item.renderedUrl = `/renders/${item.id}.png?v=${renderVersion}`;
-      item.wallpaperUrl = `/wallpapers/${item.id}.jpg?v=${renderVersion}`;
-      rendered += 1;
-      incrementProcessProgress({ succeeded: 1 });
-    } catch {
-      skipped += 1;
-      incrementProcessProgress({ failed: 1 });
-    }
-  }
-  await writeDb(config, db);
-
-  const result = {
-    mode: "rerender",
-    rendered,
-    skipped,
-  };
-  finishProcessProgress({
-    message: `重渲染完成：生成 ${rendered} 张，跳过 ${skipped} 张。`,
-    processed: rendered,
-    skipped,
-  });
-  return result;
-}
-
 async function clearLibrary(config) {
   const libraryDb = await getLibraryDb(config);
   const removedItems = libraryDb.prepare("select count(*) as count from processed_photos").get().count;
@@ -554,7 +344,7 @@ async function clearLibrary(config) {
   const wallpapersDir = getWallpapersDir(config);
   const removedRenders = await clearRenderFiles(rendersDir);
   const removedWallpapers = await clearRenderFiles(wallpapersDir);
-  libraryDb.exec("delete from wallpaper_history; delete from curated_photos; delete from processed_photos; delete from source_photos;");
+  libraryDb.exec("delete from task_items; delete from tasks; delete from wallpaper_history; delete from curated_photos; delete from processed_photos; delete from source_photos;");
   return {
     mode: "clear",
     removedItems,
@@ -597,7 +387,7 @@ function normalizeConfig(input) {
     footerHeight: sanitizePositiveInt(merged.footerHeight, defaultConfig.footerHeight),
     wallpaperWidth: sanitizePositiveInt(merged.wallpaperWidth, defaultConfig.wallpaperWidth),
     wallpaperHeight: sanitizePositiveInt(merged.wallpaperHeight, defaultConfig.wallpaperHeight),
-    wallpaperAutoIntervalHours: sanitizeNonNegativeNumber(merged.wallpaperAutoIntervalHours, defaultConfig.wallpaperAutoIntervalHours),
+    wallpaperAutoIntervalHours: [0,1,2,4,8].includes(Number(merged.wallpaperAutoIntervalHours)) ? Number(merged.wallpaperAutoIntervalHours) : defaultConfig.wallpaperAutoIntervalHours,
     wallpaperCollection: normalizeWallpaperCollection(merged.wallpaperCollection),
     layoutTemplates: normalizeLayoutTemplates(merged.layoutTemplates),
     promptVersion: String(merged.promptVersion || defaultConfig.promptVersion).trim() || defaultConfig.promptVersion,
@@ -653,24 +443,6 @@ function sanitizeNonNegativeNumber(value, fallback) {
   return Math.round(parsed * 100) / 100;
 }
 
-async function mapWithConcurrency(items, concurrency, worker) {
-  const results = new Array(items.length);
-  let nextIndex = 0;
-  const workerCount = Math.min(Math.max(1, concurrency), items.length);
-
-  await Promise.all(
-    Array.from({ length: workerCount }, async () => {
-      while (nextIndex < items.length) {
-        const currentIndex = nextIndex;
-        nextIndex += 1;
-        results[currentIndex] = await worker(items[currentIndex], currentIndex);
-      }
-    }),
-  );
-
-  return results;
-}
-
 function getDataDir(config) {
   if (runtimeDataRoot) return runtimeDataRoot;
   return path.resolve(rootDir, config.dataDir);
@@ -692,48 +464,6 @@ function getWallpapersDir(config) {
   return path.join(getDataDir(config), "wallpapers");
 }
 
-async function readDb(config, collection = "representative") {
-  const db = await getLibraryDb(config);
-  const where = collection === "curated" ? "where c.photo_id is not null" : collection === "all" ? "" : "where p.is_representative = 1";
-  const rows = db
-    .prepare(
-      `select p.*, s.source_path, s.file_name, s.file_hash, s.perceptual_hash, s.captured_at, s.captured_date,
-              s.location, s.width, s.height, s.orientation, c.photo_id as curated_photo_id
-         from processed_photos p
-         join source_photos s on s.id = p.source_id
-         left join curated_photos c on c.photo_id = p.id
-         ${where}
-         order by p.processed_at desc`,
-    )
-    .all();
-  return { items: rows.map(rowToGalleryItem) };
-}
-
-async function writeDb(config, dbData) {
-  const db = await getLibraryDb(config);
-  const items = assignSimilarityGroups(Array.isArray(dbData.items) ? dbData.items : []);
-  const keepIds = new Set(items.map((item) => item.id));
-  db.exec("begin immediate");
-  try {
-    for (const item of items) {
-      upsertSourceRow(db, item);
-      upsertProcessedRow(db, item);
-    }
-    const existing = db.prepare("select id from processed_photos").all();
-    const deleteProcessed = db.prepare("delete from processed_photos where id = ?");
-    const deleteCurated = db.prepare("delete from curated_photos where photo_id = ?");
-    for (const row of existing) {
-      if (keepIds.has(row.id)) continue;
-      deleteCurated.run(row.id);
-      deleteProcessed.run(row.id);
-    }
-    db.exec("commit");
-  } catch (error) {
-    db.exec("rollback");
-    throw error;
-  }
-}
-
 async function getLibraryDb(config) {
   const dbPath = getDbPath(config);
   await fs.mkdir(path.dirname(dbPath), { recursive: true });
@@ -744,7 +474,9 @@ async function getLibraryDb(config) {
   sqliteDb.exec("pragma journal_mode = WAL");
   sqliteDb.exec("pragma foreign_keys = ON");
   ensureSchema(sqliteDb);
+  await migrateLibrary(sqliteDb, dbPath);
   await migrateLegacyJsonDb(config, sqliteDb);
+  for (const directory of [getRendersDir(config),getWallpapersDir(config)]) await fs.rm(path.join(directory,".inktime-staging"),{ recursive:true,force:true });
   return sqliteDb;
 }
 
@@ -887,37 +619,9 @@ async function setCuratedPhoto(config, photoId, curated) {
 
 async function setRandomWallpaper(config) {
   const db = await getLibraryDb(config);
-  const latest = db.prepare("select photo_id from wallpaper_history order by set_at desc limit 1").get();
-  const source = normalizeWallpaperCollection(config.wallpaperCollection);
-  const joinCurated = source === "curated" ? "join curated_photos c on c.photo_id = p.id" : "";
-  const sourceWhere = source === "representative" ? "and p.is_representative = 1" : "";
-  let row = db
-    .prepare(
-      `select p.id, p.wallpaper_url, s.file_name
-         from processed_photos p
-         join source_photos s on s.id = p.source_id
-         ${joinCurated}
-        where p.wallpaper_url is not null and p.wallpaper_url != '' ${sourceWhere}
-          and (? is null or p.id != ?)
-        order by random()
-        limit 1`,
-    )
-    .get(latest?.photo_id || null, latest?.photo_id || null);
-  if (!row && latest?.photo_id) {
-    row = db
-      .prepare(
-        `select p.id, p.wallpaper_url, s.file_name
-           from processed_photos p
-           join source_photos s on s.id = p.source_id
-           ${joinCurated}
-          where p.wallpaper_url is not null and p.wallpaper_url != '' ${sourceWhere}
-          order by random()
-          limit 1`,
-      )
-      .get();
-  }
+  const row = selectWallpaperRow(db,config);
   if (!row) throw new Error("还没有可用的壁纸图片。");
-  return applyWallpaperRow(config, db, row);
+  return applyWallpaperRow(config,db,row);
 }
 
 async function setWallpaperByPhotoId(config, photoId) {
@@ -937,26 +641,26 @@ async function setWallpaperByPhotoId(config, photoId) {
 
 async function applyWallpaperRow(config, db, row) {
   const wallpaperPath = path.join(getWallpapersDir(config), path.basename(stripUrlQuery(row.wallpaper_url)));
+  const statusPath = path.join(getDataDir(config),"wallpaper-status.json");
   try {
-    await fs.access(wallpaperPath);
-  } catch {
-    throw new Error("壁纸文件不存在，请先重新渲染这批照片。");
+    try { await fs.access(wallpaperPath); } catch { throw new Error("壁纸文件不存在，请先重新渲染这批照片。"); }
+    const appliedPath = await applyDesktopWallpaper(wallpaperPath);
+    db.prepare("insert into wallpaper_history(id, photo_id, wallpaper_path, set_at) values (?, ?, ?, ?)").run(
+      createRunId(), row.id, wallpaperPath, new Date().toISOString(),
+    );
+    await fs.writeFile(statusPath,JSON.stringify({ status:"ok",lastError:"",updatedAt:new Date().toISOString() }));
+    return { photoId: row.id, fileName: row.file_name, wallpaperPath, appliedPath };
+  } catch (error) {
+    await fs.writeFile(statusPath,JSON.stringify({ status:"error",lastError:error.message,updatedAt:new Date().toISOString() }));
+    throw error;
   }
-  const appliedPath = await applyDesktopWallpaper(wallpaperPath);
-  db.prepare("insert into wallpaper_history(id, photo_id, wallpaper_path, set_at) values (?, ?, ?, ?)").run(
-    createRunId(),
-    row.id,
-    wallpaperPath,
-    new Date().toISOString(),
-  );
-  return { photoId: row.id, fileName: row.file_name, wallpaperPath, appliedPath };
 }
 
 function readProcessedRow(db, photoId) {
   return db
     .prepare(
       `select p.*, s.source_path, s.file_name, s.file_hash, s.perceptual_hash, s.captured_at, s.captured_date,
-              s.location, s.width, s.height, s.orientation, c.photo_id as curated_photo_id
+              s.location, s.width, s.height, s.orientation, s.file_mtime, c.photo_id as curated_photo_id
          from processed_photos p
          join source_photos s on s.id = p.source_id
          left join curated_photos c on c.photo_id = p.id
@@ -1015,8 +719,8 @@ function upsertProcessedRow(db, item) {
     `insert into processed_photos(
       id, source_id, run_id, prompt_version, model, source_url, rendered_url, wallpaper_url,
       memory_score, metrics_json, caption, side_caption, reason, tags_json, processed_at,
-      token_input, token_output, token_total, token_estimated, similar_group_id, is_representative
-    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      token_input, token_output, token_total, token_estimated, similar_group_id, is_representative, source_hash
+    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     on conflict(id) do update set
       source_id = excluded.source_id,
       run_id = excluded.run_id,
@@ -1037,7 +741,8 @@ function upsertProcessedRow(db, item) {
       token_total = excluded.token_total,
       token_estimated = excluded.token_estimated,
       similar_group_id = excluded.similar_group_id,
-      is_representative = excluded.is_representative`,
+      is_representative = excluded.is_representative,
+      source_hash = excluded.source_hash`,
   ).run(
     item.id,
     item.sourceId || createSourceId(item.sourcePath),
@@ -1060,6 +765,7 @@ function upsertProcessedRow(db, item) {
     tokenUsage.estimated ? 1 : 0,
     item.similarGroupId || null,
     item.isRepresentative === false ? 0 : 1,
+    item.fileHash || null,
   );
   if (item.isCurated) {
     db.prepare("insert or ignore into curated_photos(photo_id, created_at) values (?, ?)").run(item.id, new Date().toISOString());
@@ -1130,97 +836,63 @@ async function clearRenderFiles(rendersDir) {
   }
 }
 
-async function readSources(config, status) {
+async function syncSourceInventory(config, files, check = () => {}) {
   const db = await getLibraryDb(config);
-  const where = status === "all" ? "" : "where s.status = ?";
-  const rows = db
-    .prepare(
-      `select s.*, p.id as processed_id, p.processed_at, p.memory_score, p.caption, p.side_caption,
-              p.similar_group_id, p.is_representative, c.photo_id as curated_photo_id
-         from source_photos s
-         left join processed_photos p on p.source_id = s.id
-         left join curated_photos c on c.photo_id = p.id
-         ${where}
-         order by s.last_seen_at desc, s.file_name`,
-    )
-    .all(...(status === "all" ? [] : [status]));
-  return rows.map((row) => rowToSourceItem(row, config));
-}
-
-async function syncSourceInventory(config, files) {
-  const db = await getLibraryDb(config);
-  const upsert = db.prepare(
-    `insert into source_photos(
-      id, source_path, file_name, file_hash, perceptual_hash, captured_at, captured_date,
-      location, width, height, orientation, status, skip_code, skip_reason, added_at, last_seen_at
-    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    on conflict(id) do update set
-      source_path = excluded.source_path,
-      file_name = excluded.file_name,
-      file_hash = coalesce(source_photos.file_hash, excluded.file_hash),
-      perceptual_hash = coalesce(source_photos.perceptual_hash, excluded.perceptual_hash),
-      captured_at = coalesce(source_photos.captured_at, excluded.captured_at),
-      captured_date = coalesce(source_photos.captured_date, excluded.captured_date),
-      location = coalesce(source_photos.location, excluded.location),
-      width = coalesce(source_photos.width, excluded.width),
-      height = coalesce(source_photos.height, excluded.height),
-      orientation = coalesce(source_photos.orientation, excluded.orientation),
-      last_seen_at = excluded.last_seen_at`,
-  );
-  db.exec("begin immediate");
-  try {
-    for (const file of files) {
-      try {
-        const stat = await fs.stat(file);
-        const fileHash = await hashFile(file);
-        const profile = await buildSourceProfile(file, stat, fileHash);
-        upsert.run(
-          profile.id,
-          file,
-          path.basename(file),
-          fileHash,
-          profile.perceptualHash || null,
-          profile.capturedAt || null,
-          profile.capturedDate || null,
-          profile.location || null,
-          profile.metrics.width || null,
-          profile.metrics.height || null,
-          profile.metrics.orientation || null,
-          "pending",
-          null,
-          null,
-          new Date().toISOString(),
-          new Date().toISOString(),
-        );
-      } catch {
-        // Ignore unreadable files during source inventory; scanning should keep moving.
+  const known = db.prepare("select * from source_photos where id=?");
+  const updateVersion = db.prepare("update source_photos set file_size=?,file_mtime=?,last_seen_at=? where id=?");
+  const report = { changed: 0, unchanged: 0, errors: [] };
+  let batch = [];
+  const flush = () => {
+    if (!batch.length) return;
+    db.exec("begin immediate");
+    try {
+      for (const { file, stat, profile } of batch) {
+        upsertSourceRow(db, { ...profile, sourceId: profile.id, sourcePath: file, fileName: path.basename(file), fileHash: profile.fileHash });
+        updateVersion.run(stat.size, stat.mtimeMs, new Date().toISOString(), profile.id);
       }
-    }
-    db.exec("commit");
-  } catch (error) {
-    db.exec("rollback");
-    throw error;
+      db.exec("commit");
+      batch = [];
+    } catch (error) { db.exec("rollback"); throw error; }
+  };
+  for (const file of files) {
+    try {
+      check();
+      const stat = await fs.stat(file);
+      const previous = known.get(createSourceId(file));
+      if (previous && previous.file_size === stat.size && previous.file_mtime === stat.mtimeMs && previous.perceptual_hash) {
+        report.unchanged++;
+        updateVersion.run(stat.size, stat.mtimeMs, new Date().toISOString(), previous.id);
+        continue;
+      }
+      const fileHash = await hashFile(file);
+      const profile = await buildSourceProfile(file, stat, fileHash);
+      batch.push({ file, stat, profile });
+      report.changed++;
+      if (batch.length >= 50) flush();
+    } catch (error) { if (error.name === "AbortError") { flush(); throw error; } report.errors.push({ file, message: error.message }); }
   }
+  flush();
+  return report;
 }
 
 async function refreshSourceSkipState(config, db) {
-  const processedRows = db.prepare("select source_id from processed_photos").all();
+  const processedRows = db.prepare("select p.source_id from processed_photos p join source_photos s on s.id=p.source_id where p.source_hash=s.file_hash").all();
   const processedSourceIds = new Set(processedRows.map((row) => row.source_id));
   const rows = db.prepare("select * from source_photos order by captured_at, source_path").all();
 
   const reset = db.prepare(
     `update source_photos
         set status = 'pending', skip_code = null, skip_reason = null
-      where id = ? and id not in (select source_id from processed_photos)`,
+      where id = ? and status != 'failed'`,
   );
-  const markSkipped = db.prepare("update source_photos set status = 'skipped', skip_code = ?, skip_reason = ? where id = ?");
+  const markSkipped = db.prepare("update source_photos set status = 'skipped', skip_code = ?, skip_reason = ? where id = ? and status not in ('failed','processing')");
   const markProcessed = db.prepare("update source_photos set status = 'processed', skip_code = null, skip_reason = null where id = ?");
 
   db.exec("begin immediate");
   try {
     for (const row of rows) {
       if (processedSourceIds.has(row.id)) {
-        markProcessed.run(row.id);
+        if (row.status !== "failed") markProcessed.run(row.id);
       } else if (row.status !== "processing") {
         reset.run(row.id);
       }
@@ -1263,15 +935,7 @@ function markDuplicateSources(db, markSkipped) {
 
 function markBurstSources(db, markSkipped) {
   const rows = db.prepare("select * from source_photos where status != 'skipped' order by captured_at, source_path").all();
-  const groups = [];
-  for (const row of rows) {
-    const match = groups.find((group) => group.some((candidate) => isSourceBurstSimilar(candidate, row)));
-    if (match) {
-      match.push(row);
-    } else {
-      groups.push([row]);
-    }
-  }
+  const groups = groupBurstCandidates(rows, { hash:"perceptual_hash",time:"captured_at",date:"captured_date" }, isSourceBurstSimilar);
 
   for (const group of groups) {
     if (group.length <= 1) continue;
@@ -1303,23 +967,21 @@ function readProcessableSources(db, limit) {
     .all(limit);
 }
 
-function readSourcesByIds(db, ids) {
-  if (!ids.length) return [];
-  const placeholders = ids.map(() => "?").join(",");
-  return db.prepare(`select * from source_photos where id in (${placeholders}) order by captured_at, source_path`).all(...ids);
-}
-
-function countSkippedSources(db) {
-  return db.prepare("select count(*) as count from source_photos where status = 'skipped'").get().count;
-}
-
-function markSourceStatus(db, sourceId, status, skipCode, skipReason) {
-  db.prepare("update source_photos set status = ?, skip_code = ?, skip_reason = ? where id = ?").run(status, skipCode || null, skipReason || null, sourceId);
-}
 
 async function rewriteProcessedGroups(config) {
-  const db = await readDb(config, "all");
-  await writeDb(config, { items: assignSimilarityGroups(db.items) });
+  const db = await getLibraryDb(config);
+  const rows = db.prepare("select p.*,s.source_path,s.file_name,s.captured_at,s.captured_date,s.perceptual_hash,s.location,s.width,s.height,s.orientation from processed_photos p join source_photos s on s.id=p.source_id order by s.captured_at,p.id").all();
+  const items = assignSimilarityGroups(rows.map(rowToGalleryItem));
+  const overrides = new Map(rows.filter(row => row.group_override).map(row => [row.id, JSON.parse(row.group_override)]));
+  const update = db.prepare("update processed_photos set similar_group_id=?,is_representative=? where id=?");
+  db.exec("begin immediate");
+  try {
+    for (const item of items) {
+      const manual = overrides.get(item.id);
+      update.run(manual ? manual.group : item.similarGroupId || "", Number(manual ? manual.representative === item.id : item.isRepresentative), item.id);
+    }
+    db.exec("commit");
+  } catch (error) { db.exec("rollback"); throw error; }
 }
 
 function matchesScreenshotPattern(filePath, config) {
@@ -1328,7 +990,7 @@ function matchesScreenshotPattern(filePath, config) {
 }
 
 function rowToSourceItem(row, config) {
-  const effectiveStatus = row.processed_id ? "processed" : row.status || "pending";
+  const effectiveStatus = row.status || "pending";
   return {
     id: row.id,
     processedId: row.processed_id || "",
@@ -1363,8 +1025,8 @@ async function listImageFiles(dir) {
   let entries;
   try {
     entries = await fs.readdir(dir, { withFileTypes: true });
-  } catch {
-    return out;
+  } catch (error) {
+    throw new Error(`无法读取照片目录：${dir} (${error.message})`);
   }
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
@@ -1418,15 +1080,7 @@ async function computePerceptualHash(filePath) {
 
 function assignSimilarityGroups(items) {
   const sorted = [...items].sort((a, b) => String(a.capturedAt || a.processedAt || "").localeCompare(String(b.capturedAt || b.processedAt || "")));
-  const groups = [];
-  for (const item of sorted) {
-    const match = groups.find((group) => group.some((candidate) => isBurstSimilar(candidate, item)));
-    if (match) {
-      match.push(item);
-    } else {
-      groups.push([item]);
-    }
-  }
+  const groups = groupBurstCandidates(sorted, { hash:"perceptualHash",time:"capturedAt",date:"capturedDate" }, isBurstSimilar);
 
   for (const group of groups) {
     const groupId = group.length > 1 ? `sim-${group[0].id}` : "";
@@ -1481,63 +1135,86 @@ function hammingHex(a, b) {
   }
 }
 
-async function processImage(filePath, config, options) {
-  const id = options.existingId || crypto.createHash("sha1").update(filePath).digest("hex").slice(0, 16);
-  const fileName = path.basename(filePath);
+async function processTaskImage(source, config, context) {
+  const { checkpoint, save, check, taskId, mode } = context;
+  const db = await getLibraryDb(config);
+  const filePath = source.source_path;
   const stat = await fs.stat(filePath);
-  const sourceProfile = await buildSourceProfile(filePath, stat, options.fileHash);
-  const analysis = await analyzeWithModel(filePath, config);
-  const sideCaptionResult = await generateSideCaption(filePath, config, analysis);
-  const tokenUsage = addTokenUsage(analysis.tokenUsage, sideCaptionResult.tokenUsage);
-  const renderName = `${id}.png`;
-  const wallpaperName = `${id}.jpg`;
-  const rendersDir = getRendersDir(config);
-  const wallpapersDir = getWallpapersDir(config);
-  await fs.mkdir(rendersDir, { recursive: true });
-  await fs.mkdir(wallpapersDir, { recursive: true });
-  await renderImage(
-    filePath,
-    { ...analysis, side_caption: sideCaptionResult.text, location: sourceProfile.location },
-    path.join(rendersDir, renderName),
-    config,
-    sourceProfile.capturedDate,
-  );
-  await renderMacWallpaper(
-    filePath,
-    { ...analysis, side_caption: sideCaptionResult.text, location: sourceProfile.location },
-    path.join(wallpapersDir, wallpaperName),
-    config,
-    sourceProfile.capturedDate,
-  );
-  const relativeSource = path.relative(config.imageDir, filePath).replaceAll(path.sep, "/");
-
-  return {
-    id,
-    sourceId: sourceProfile.id,
-    runId: options.runId,
-    promptVersion: config.promptVersion,
-    model: config.model,
-    fileName,
-    fileHash: options.fileHash,
-    perceptualHash: sourceProfile.perceptualHash,
-    sourcePath: filePath,
-    sourceUrl: `/source/${encodeURI(relativeSource)}`,
-    renderedUrl: `/renders/${renderName}`,
-    wallpaperUrl: `/wallpapers/${wallpaperName}`,
-    scores: {
-      memory: analysis.memory_score,
-    },
-    metrics: analysis.metrics,
-    caption: analysis.caption,
-    sideCaption: sideCaptionResult.text,
-    reason: analysis.reason,
-    tags: analysis.tags,
-    location: sourceProfile.location,
-    capturedAt: sourceProfile.capturedAt,
-    capturedDate: sourceProfile.capturedDate,
-    tokenUsage,
-    processedAt: new Date().toISOString(),
-  };
+  const fileHash = await hashFile(filePath);
+  const key = crypto.createHash("sha256").update(fileHash + JSON.stringify(config)).digest("hex");
+  if (checkpoint.key !== key) {
+    for (const field of Object.keys(checkpoint)) delete checkpoint[field];
+    save("analysis", { key });
+  }
+  check();
+  const previous = db.prepare("select id from processed_photos where source_id=?").get(source.id);
+  const id = previous?.id || source.id;
+  let item;
+  if (mode === "rerender") {
+    const row = readProcessedRow(db, id);
+    if (!row) throw new Error("照片尚未分析，不能重渲染");
+    item = effectivePhoto(rowToGalleryItem(row), row);
+  } else {
+    if (!checkpoint.profile) save("analysis", { profile: await buildSourceProfile(filePath,stat,fileHash) });
+    if (!checkpoint.analysis) {
+      const analysis = await analyzeWithModel(filePath, config);
+      check(); save("caption", { analysis });
+    }
+    if (!checkpoint.sideCaption) {
+      const sideCaption = await generateSideCaption(filePath, config, checkpoint.analysis);
+      check(); save("render", { sideCaption });
+    }
+    const { analysis, sideCaption, profile } = checkpoint;
+    item = {
+      id, sourceId:source.id,runId:taskId,promptVersion:config.promptVersion,model:config.model,
+      sourcePath:filePath,sourceUrl:buildSourceUrl(filePath,config),fileName:path.basename(filePath),
+      fileHash,perceptualHash:profile.perceptualHash,capturedAt:profile.capturedAt,capturedDate:profile.capturedDate,location:profile.location,
+      scores:{ memory:analysis.memory_score },metrics:analysis.metrics,caption:analysis.caption,sideCaption:sideCaption.text,reason:analysis.reason,tags:analysis.tags,
+      tokenUsage:addTokenUsage(analysis.tokenUsage,sideCaption.tokenUsage),processedAt:new Date().toISOString(),isRepresentative:true,
+    };
+  }
+  check();
+  const stored = previous ? readProcessedRow(db,id) : null;
+  const effective = stored ? effectivePhoto(item,stored) : item;
+  const manualVersion = JSON.stringify(stored ? JSON.parse(stored.manual_edits || "{}") : {});
+  if (checkpoint.rendered && checkpoint.manualVersion === manualVersion && stored?.rendered_url === checkpoint.renderedUrl && stored?.wallpaper_url === checkpoint.wallpaperUrl) {
+    try {
+      await fs.access(path.join(getRendersDir(config),path.basename(checkpoint.renderedUrl)));
+      await fs.access(path.join(getWallpapersDir(config),path.basename(checkpoint.wallpaperUrl)));
+      return;
+    } catch { /* Missing outputs need rendering again, with saved model results. */ }
+  }
+  const analysis = { caption:effective.caption,side_caption:effective.sideCaption,location:effective.location,memory_score:effective.scores.memory };
+  // Versioned filenames keep the previous successful pair intact until commit.
+  const version = `${id}-${taskId}-${crypto.randomBytes(4).toString("hex")}`;
+  const renderPath = path.join(getRendersDir(config),version+".png");
+  const wallpaperPath = path.join(getWallpapersDir(config),version+".jpg");
+  const stagedRender = path.join(getRendersDir(config),".inktime-staging",version+".png");
+  const stagedWallpaper = path.join(getWallpapersDir(config),".inktime-staging",version+".jpg");
+  await fs.mkdir(path.dirname(stagedRender),{ recursive:true });
+  await fs.mkdir(path.dirname(stagedWallpaper),{ recursive:true });
+  try {
+    await renderImage(filePath,analysis,stagedRender,config,effective.capturedDate);
+    check();
+    await renderMacWallpaper(filePath,analysis,stagedWallpaper,config,effective.capturedDate);
+    check();
+    if ((await hashFile(filePath)) !== fileHash) throw new Error("源文件在处理期间发生变化，请重试");
+    await fs.rename(stagedRender,renderPath);
+    await fs.rename(stagedWallpaper,wallpaperPath);
+    check();
+    item.renderedUrl = `/renders/${version}.png`;
+    item.wallpaperUrl = `/wallpapers/${version}.jpg`;
+    db.exec("begin immediate");
+    try {
+      if (mode === "rerender") db.prepare("update processed_photos set rendered_url=?,wallpaper_url=? where id=?").run(item.renderedUrl,item.wallpaperUrl,id);
+      else { upsertSourceRow(db,item); upsertProcessedRow(db,item); }
+      db.exec("commit");
+    } catch (error) { db.exec("rollback"); throw error; }
+    save("done", { rendered:true,renderedUrl:item.renderedUrl,wallpaperUrl:item.wallpaperUrl,manualVersion });
+  } catch (error) {
+    await Promise.all([renderPath,wallpaperPath,stagedRender,stagedWallpaper].map(file => fs.rm(file,{ force:true })));
+    throw error;
+  }
 }
 
 async function readPhotoDetails(filePath, stat) {
@@ -1632,8 +1309,8 @@ async function generateSideCaption(filePath, config, analysis) {
       text: sanitizeOneLine(result.content, 30) || fallbackSideCaption(analysis),
       tokenUsage: result.tokenUsage,
     };
-  } catch {
-    return { text: fallbackSideCaption(analysis), tokenUsage: emptyTokenUsage() };
+  } catch (error) {
+    throw error;
   }
 }
 
@@ -2035,16 +1712,6 @@ function createProcessProgress(mode) {
   };
 }
 
-function startProcessProgress(mode, message) {
-  processProgress = {
-    ...createProcessProgress(mode),
-    id: createRunId(),
-    status: "running",
-    message,
-    updatedAt: new Date().toISOString(),
-  };
-}
-
 function updateProcessProgress(patch) {
   processProgress = {
     ...processProgress,
@@ -2072,33 +1739,6 @@ function appendAguiEvent(kind, text) {
 function updateAguiEvent(id, text) {
   const nextEvents = (processProgress.aguiEvents || []).map((event) => (event.id === id ? { ...event, text: String(text || ""), at: new Date().toISOString() } : event));
   updateProcessProgress({ aguiEvents: nextEvents });
-}
-
-function incrementProcessProgress({ succeeded = 0, failed = 0, tokenUsage = emptyTokenUsage() }) {
-  updateProcessProgress({
-    done: processProgress.done + succeeded + failed,
-    succeeded: processProgress.succeeded + succeeded,
-    failed: processProgress.failed + failed,
-    tokenTotal: processProgress.tokenTotal + Number(tokenUsage?.total || 0),
-  });
-}
-
-function finishProcessProgress(patch) {
-  updateProcessProgress({
-    ...patch,
-    status: "done",
-    currentFile: "",
-  });
-}
-
-function failProcessProgress(message) {
-  if (processProgress.status !== "running") return;
-  appendAguiEvent("error", message);
-  updateProcessProgress({
-    status: "error",
-    message,
-    currentFile: "",
-  });
 }
 
 function getFrameSize(config, isLandscape, sourceWidth, sourceHeight) {
@@ -2591,58 +2231,6 @@ function createRunId() {
   return `${new Date().toISOString().replaceAll(/[-:TZ.]/g, "").slice(0, 14)}-${crypto.randomBytes(3).toString("hex")}`;
 }
 
-function normalizeCollection(value) {
-  if (value === "all" || value === "curated") return value;
-  return "representative";
-}
-
-function normalizeSourceStatus(value) {
-  if (value === "pending" || value === "processed" || value === "skipped" || value === "failed" || value === "processing") return value;
-  return "all";
-}
-
-function escapeAppleScriptString(value) {
-  return String(value).replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-}
-
-async function applyDesktopWallpaper(wallpaperPath) {
-  const escaped = escapeAppleScriptString(wallpaperPath);
-  await execFileAsync(
-    "osascript",
-    ["-e", `tell application "System Events"\nrepeat with desktopItem in desktops\nset picture of desktopItem to POSIX file "${escaped}"\nend repeat\nend tell`],
-    { timeout: 8000 },
-  );
-  await execFileAsync("killall", ["Dock"]).catch(() => {});
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    const appliedPath = await readDesktopWallpaperPath();
-    if (desktopWallpaperMatches(appliedPath, wallpaperPath)) return appliedPath;
-    await wait(500);
-  }
-  const appliedPath = await readDesktopWallpaperPath();
-  throw new Error(`macOS 未确认壁纸已切换。目标：${wallpaperPath}；当前：${appliedPath || "未知"}`);
-}
-
-async function readDesktopWallpaperPath() {
-  try {
-    const { stdout } = await execFileAsync("osascript", ["-e", 'tell application "System Events" to get picture of every desktop'], { timeout: 8000 });
-    return stdout.trim();
-  } catch {
-    return "";
-  }
-}
-
-function desktopWallpaperMatches(appliedPath, wallpaperPath) {
-  const expected = path.resolve(wallpaperPath);
-  return String(appliedPath || "")
-    .split(/\s*,\s*|\n/)
-    .map((value) => value.trim())
-    .some((value) => value && path.resolve(value) === expected);
-}
-
-function wait(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 function resolveApiKey(config) {
   const preferred = String(config.apiKeyEnvName || "").trim();
   if (preferred && process.env[preferred]) {
@@ -2664,7 +2252,7 @@ function resolveVisionProvider(baseUrl) {
     const url = new URL(normalized);
     const isLocalOllamaHost =
       (url.hostname === "127.0.0.1" || url.hostname === "localhost") &&
-      (url.port === "11434" || (!url.port && url.protocol === "http:"));
+      (url.port === "11434" || url.pathname === "/api/chat" || (!url.port && url.protocol === "http:"));
     if (isLocalOllamaHost) {
       return {
         kind: "ollama",
@@ -2722,9 +2310,6 @@ function extractJson(value) {
   return text;
 }
 
-function isAbortError(error) {
-  return error instanceof Error && (error.name === "AbortError" || /abort/i.test(error.message));
-}
 
 function loadLocalEnv(filePath) {
   return fs

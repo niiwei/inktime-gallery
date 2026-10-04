@@ -1410,3 +1410,66 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 }
+
+/* Upgrade views retain the existing warm palette and surface tokens. */
+@font-face { font-family: 'Noto Serif CJK SC'; src: url('/fonts/noto-serif-cjk-sc.otf') format('opentype'); font-display: swap; }
+.reviewModes, .pagination, .selectionToolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:14px 0; }
+.reviewModes button, .pagination button, .selectionToolbar button, fieldset button, .layoutToolbar > button { padding:9px 13px; border:1px solid var(--line); border-radius:10px; background:var(--surface-strong); color:var(--text); cursor:pointer; }
+.reviewModes .active { background:var(--accent); color:white; }
+.pagination { justify-content:center; }
+.selectionToolbar { padding:12px; border-radius:14px; background:var(--accent-soft); font-size:13px; }
+.filterBar { flex-wrap:wrap; }
+.filterBar input { max-width:145px; padding:9px 12px; border:1px solid var(--line); border-radius:9px; background:var(--surface-strong); color:var(--text); }
+.virtualViewport { height:min(620px,68vh); min-height:320px; overflow:auto; overscroll-behavior:contain; }
+.virtualRows .photoCard { margin:0 10px 16px 0; min-width:0; height:304px; }
+.virtualRows .photoThumb { height:218px; aspect-ratio:auto; }
+.virtualRows .photoMeta { gap:6px; padding:12px; }
+.virtualRows .photoMeta strong { font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.virtualRows .photoMeta > span { font-size:12px; }
+.virtualRows .sourceRow { height:96px; margin-bottom:8px; }
+.sourcePreviewButton { padding:0; width:76px; height:76px; border:0; border-radius:10px; overflow:hidden; flex-shrink:0; }
+.sourcePreviewButton img { width:100%; height:100%; object-fit:cover; }
+.taskCenter, .wallpaperPage { display:grid; gap:20px; padding:16px 0; }
+.taskCard { padding:20px; border:1px solid var(--line); border-radius:18px; background:var(--surface-strong); }
+.taskHeader, .taskActions, .taskMeta { display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin:10px 0; }
+.taskHeader { justify-content:space-between; }
+.taskActions button { padding:8px 12px; border:1px solid var(--line); background:var(--surface); border-radius:9px; cursor:pointer; }
+.taskCard details { margin-top:14px; color:var(--muted); font-size:13px; }
+.wallpaperHero { display:grid; grid-template-columns:minmax(0,1.6fr) 1fr; gap:24px; align-items:center; }
+.wallpaperPreview { aspect-ratio:16/10; background:#e6e4dd; border-radius:14px; display:grid; place-items:center; overflow:hidden; }
+.wallpaperPreview img { width:100%; height:100%; object-fit:contain; }
+.historyRow { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--line); font-size:13px; }
+.miniGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.miniCard img { width:100%; height:120px; object-fit:cover; border-radius:9px; }
+.miniCard span { display:block; font-size:12px; margin:6px; }
+.onboarding { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; padding:18px 0; }
+.onboardingStep { padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--surface-strong); }
+.onboardingStep > b { color:var(--accent); font-size:22px; }
+.onboardingStep p { font-size:13px; color:var(--muted); }
+.onboardingStep button { padding:8px; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
+.settingsDrawer { width:min(600px,100vw); margin-left:auto; max-height:100vh; overflow:auto; padding:26px; background:var(--bg); color:var(--text); }
+.settingsHeader { display:flex; align-items:center; justify-content:space-between; }
+.settingsForm fieldset, .settingsDrawer > fieldset { border:1px solid var(--line); border-radius:12px; padding:16px; display:grid; gap:14px; margin:18px 0; }
+.settingsForm .checkLabel { display:flex; align-items:center; }
+.settingsForm .checkLabel input { width:auto; }
+.settingsDrawer select { max-width:100%; }
+.insightPanel label { display:grid; gap:5px; margin:12px 0; font-size:13px; }
+.insightPanel input, .insightPanel textarea { padding:10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:inherit; }
+.sourcePreviewDialog { width:min(800px,90vw); max-height:90vh; overflow:auto; padding:22px; background:var(--bg); color:var(--text); border-radius:16px; margin:auto; }
+.sourcePreviewDialog img { display:block; width:100%; max-height:60vh; object-fit:contain; margin:15px 0; }
+.singlePreview { position:absolute; z-index:5; inset:85px 15px 15px; background:var(--bg); color:var(--text); padding:20px; overflow:auto; text-align:center; }
+.singlePreview img { display:block; max-width:100%; max-height:calc(100% - 40px); margin:12px auto; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+button:disabled { opacity:.5; cursor:default; }
+@media (max-width:1000px) { .wallpaperHero, .onboarding { grid-template-columns:1fr; } .sidebarMeta { display:none; } }
+@media (prefers-reduced-motion:reduce) { *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; } }
+.relatedGroup { display:flex; flex-wrap:wrap; gap:10px; }
+.relatedGroup h3 { width:100%; }
+.relatedGroup button { border:1px solid var(--line); border-radius:10px; padding:8px; background:var(--surface); }
+.relatedGroup img { display:block; width:100px; height:80px; object-fit:cover; margin-bottom:6px; }
+
+.recoveryPrompt { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:12px 16px; border:1px solid var(--line); border-radius:12px; background:var(--surface-strong); }
+.recoveryPrompt p { margin:0; flex:1; }
+.recoveryPrompt button { padding:8px 12px; }
+
+@media (prefers-color-scheme:dark) { .reviewModes .active { color:#102c20; } }

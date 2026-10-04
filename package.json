@@ -1,8 +1,8 @@
 {
   "name": "inktime-gallery",
   "private": true,
-  "version": "0.1.0",
-  "description": "Local-first macOS photo memory gallery and wallpaper automation app.",
+  "version": "0.2.0",
+  "description": "Local-first cross-platform photo memory gallery and wallpaper automation app.",
   "license": "MIT",
   "author": "InkTime Gallery contributors",
   "repository": {
@@ -22,8 +22,11 @@
     "electron:dev": "npm run build && electron .",
     "electron:pack": "npm run build && electron-builder --mac dir",
     "electron:dist": "npm run build && electron-builder --mac dmg",
+    "electron:dist:win": "npm run build && electron-builder --win nsis --x64",
     "preview": "vite preview --host 127.0.0.1",
-    "wallpaper:random": "node scripts/set-random-wallpaper.js"
+    "wallpaper:random": "node scripts/set-random-wallpaper.js",
+    "test": "node --test tests/*.test.js",
+    "benchmark": "node tests/benchmark.js current"
   },
   "build": {
     "appId": "com.inktime.gallery",
@@ -33,7 +36,8 @@
       "node_modules/sharp/**",
       "node_modules/@img/**",
       "assets/**",
-      "scripts/**"
+      "scripts/**",
+      "server/platform/**"
     ],
     "files": [
       "dist/**",
@@ -42,8 +46,10 @@
       "server/**",
       "scripts/**",
       "config/gallery.config.json",
-      "data/**",
       "reference/InkTime/data/world_cities_zh.csv",
+      "!data/**",
+      "!local-tests/**",
+      "!tmp/**",
       "package.json",
       "node_modules/**"
     ],
@@ -54,6 +60,23 @@
         "dir",
         "dmg"
       ]
+    },
+    "win": {
+      "icon": "assets/app-icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "include": "scripts/windows/installer.nsh"
     },
     "directories": {
       "output": "release"

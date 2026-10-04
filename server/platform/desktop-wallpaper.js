@@ -109,9 +109,10 @@ async function runWindowsBridge(targetPath, options = {}) {
 }
 
 function normalizeComparablePath(value) {
-  const normalized = String(value || "").trim().replaceAll("\\", "/");
-  if (process.platform === "win32") return normalized.toLowerCase();
-  try { return fs.realpathSync.native(normalized); } catch { return path.resolve(normalized); }
+  const normalized = String(value || "").trim();
+  let canonical;
+  try { canonical = fs.realpathSync.native(normalized); } catch { canonical = path.resolve(normalized); }
+  return process.platform === "win32" ? canonical.replaceAll("\\", "/").toLowerCase() : canonical;
 }
 
 function escapeAppleScriptString(value) {

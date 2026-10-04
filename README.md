@@ -28,7 +28,7 @@ InkTime Gallery 是一个本地优先的照片回忆助手。它扫描你指定�
 
 当前版本已经包含分页图库、缩略图与可见区域渲染、回看／照片管理／任务／壁纸／设置导航、可恢复任务队列、人工结果编辑、分组修正、备份恢复和跨平台打包入口。Node API 隔离测试 17/17 通过，前端构建通过；浏览器 smoke 使用真实 Chrome 和临时数据库，覆盖导入试处理、详情、布局预览、跨页选择和备份入口，并记录 1 千／1 万张合成重复图片样本的首屏冷／热耗时 89/68 ms、72/69 ms（20 张卡片挂载、无页面错误）。
 
-这是测试版基础，不是公开发布声明。性能目标尚未完成 1 千／1 万张真实基准；macOS 登录/唤醒调度和 Windows 11 x64 安装、主屏壁纸、登录唤醒、升级卸载仍需在对应设备验收。当前不包含 HEIC、云同步、Windows ARM64、多屏独立壁纸、智能搜索或自动更新。
+已发布预发布测试版，固定1000张真实照片基准已完成，真实万张验收仍待补齐；macOS 登录/唤醒调度和 Windows 11 x64 安装、主屏壁纸、登录唤醒、升级卸载仍需在对应设备验收。当前不包含 HEIC、云同步、Windows ARM64、多屏独立壁纸、智能搜索或自动更新。
 
 ## 它能做什么
 
@@ -66,9 +66,9 @@ InkTime Gallery 是一个本地优先的照片回忆助手。它扫描你指定�
 
 ## 下载安装
 
-已公开版本在 Releases；0.2.0 当前仅有本地测试构建，尚未公开发布：
+0.2.0-beta.1 已公开发布为预发布测试版，包含 Mac 与 Windows 安装包：
 
-- [下载 InkTime Gallery](https://github.com/niiwei/inktime-gallery/releases/latest)
+- [下载 InkTime Gallery](https://github.com/niiwei/inktime-gallery/releases/tag/v0.2.0-beta.1)
 
 当前 0.2.0 测试版说明：
 
@@ -79,11 +79,11 @@ InkTime Gallery 是一个本地优先的照片回忆助手。它扫描你指定�
 
 ## 快速开始
 
-0.2.0 本地包路径和验收记录见 [升级记录](docs/upgrade-assessment-2026-10-04.md)。
+0.2.0 测试包与验收记录见 [升级记录](docs/upgrade-assessment-2026-10-04.md)。
 
 普通用户：
 
-1. 从 [Releases](https://github.com/niiwei/inktime-gallery/releases) 下载对应平台的测试版安装包；当前公开 Release 可能尚未提供 0.2.0。
+1. 从 [Releases](https://github.com/niiwei/inktime-gallery/releases) 下载对应平台的测试版安装包，选择 `v0.2.0-beta.1`。
 2. macOS 打开 DMG，把 `InkTime Gallery.app` 拖进 `Applications`；Windows 运行 NSIS 安装包并选择安装目录。
 3. 启动 Ollama，并确保本地视觉模型已经可用。
 4. 打开 InkTime Gallery，选择照片目录，检查模型配置，先试处理 3 张，再自主开始批量处理或开启自动壁纸。
@@ -189,7 +189,7 @@ npm run electron:dist:win  # 在 Windows runner 上构建 NSIS x64 测试包
 
 ## 路线图
 
-0.2.0 已完成持久化队列、分页图库、备份恢复和基础分组修正的代码与隔离验证。后续重点是固定样本库性能基准、真实 Mac 壁纸验收、Windows 11 x64 安装与桌面验收，以及更好的相似照片质量筛选。
+0.2.0 已完成持久化队列、分页图库、备份恢复和基础分组修正的代码与隔离验证。后续重点是固定样本库性能基准、真实 Mac 登录/唤醒验收、Windows 11 x64 安装与桌面验收，以及更好的相似照片质量筛选。
 
 仍在规划中的方向包括更丰富的壁纸池、后台扫描、安静时段、按 run／日期／模型统计 token 和成本、修复派生文件，以及语义相册或智能搜索。HEIC、云同步、Windows ARM64、多屏独立壁纸、签名和自动更新不属于 0.2.0 测试版。
 

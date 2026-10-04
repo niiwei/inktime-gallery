@@ -1,6 +1,6 @@
 # InkTime 0.2.0 升级与测试版交付记录
 
-核对日期：2026-10-04。用户已批准先验收 Mac 性能与核心体验，再验收 Windows 11 x64 主屏版本。代码与安装包已准备；阶段验收尚未全部通过，未公开发布。
+核对日期：2026-10-04。用户已批准先验收 Mac 性能与核心体验，再验收 Windows 11 x64 主屏版本。代码与安装包已准备；阶段验收尚未全部通过。用户追加授权公开发布，现已发布 [v0.2.0-beta.1 预发布测试版](https://github.com/niiwei/inktime-gallery/releases/tag/v0.2.0-beta.1)，不标记全面验收完成。
 
 ## 已确定的范围
 
@@ -39,7 +39,7 @@
 
 ## 安装包与发布状态
 
-本地产物（Git忽略，未发布）：
+本地产物（Git忽略）与 Release 下载：
 
 - `release/InkTime Gallery-0.2.0-arm64.dmg`：Apple Silicon Mac。
 - `release/windows/InkTime Gallery Setup 0.2.0.exe`：Windows11 x64 NSIS。
@@ -48,10 +48,10 @@
 
 | 安装包 | SHA256 |
 | --- | --- |
-| .dmg | `b175342d9d901187909bf4b3e96453cd7504791149ba2dedb8c52823550b18c9` |
-| .exe | `01de287866dc77207cf5d522727fb178d8d43dde3328b5f0119deb1014dcf2f0` |
+| .dmg | `a26d3598536fc8de10b914340b69e80675f494f506d2ab94b6403c34b3ff3ef1` |
+| .exe | `40d400e344f8419ca1bd4af03430f0bf301165473b7cb25c3fbeacbd725d1cdf` |
 
-Mac通过 `npm run electron:dist -- --publish never` 构建。Windows本地使用独立win32依赖目录交叉构建，跳过可执行文件资源编辑；安装包已生成，但程序EXE图标/内部元数据仍应由Windows runner重新生成并核验。`.github/workflows/build.yml` 已配置macOS/Windows原生runner、API测试与两平台安装包构建，尚未触发远端运行。
+Mac通过 `npm run electron:dist -- --publish never` 构建。Windows本地使用独立win32依赖目录交叉构建，跳过可执行文件资源编辑；安装包已生成，但程序EXE图标/内部元数据仍应由Windows runner重新生成并核验。`.github/workflows/build.yml` 已配置macOS/Windows原生runner、API测试与两平台安装包构建，已触发远端运行，两平台测试步骤通过，原生打包结果见 [CI 运行](https://github.com/niiwei/inktime-gallery/actions/runs/37199131723)。
 
 两个包均未签名，可能出现系统来源提示。测试版不接自动更新。安装包排除开发数据库、私人生成物和测试目录；升级不替换用户库。
 
@@ -77,6 +77,8 @@ Mac通过 `npm run electron:dist -- --publish never` 构建。Windows本地使�
 - 完整交互：全部筛选任务集合固定、Shift/Cmd/Ctrl、代表图修正、撤销、键盘焦点、缩放与对比度须补完整矩阵。
 - 仓库原有 `reference/InkTime/data/world_cities_zh.csv` 缺失；GPS城市映射目前回退为无城市信息，EXIF已有地点仍可用，也可人工修正。本轮未下载来源/许可未知的数据。
 - 渲染临时目录在启动时清理半成品；极窄的文件移入正式目录到数据库提交窗口内强退，仍可能留下未引用的完整图片对。旧结果不会被替换，历史输出暂不自动清理。
-- 暂未签名、未公开发布、未启用自动更新。真实设备验收通过前不标记本轮全面完成。
+- 暂未签名、已公开预发布、未启用自动更新。真实设备验收通过前不标记本轮全面完成。
+
+发布源码提交 `08c0466`，修复 Windows 壁纸别名路径比较；远端两个资产大小与 SHA256 已核对一致。
 
 接口与架构见 `docs/architecture.md`。Windows桥接和调度契约对照 [IDesktopWallpaper](https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nn-shobjidl_core-idesktopwallpaper) 与 [Task Scheduler schema](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-schema)；官方文档核对不能替代实机运行。

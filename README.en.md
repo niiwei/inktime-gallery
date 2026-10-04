@@ -27,7 +27,7 @@ It does not require a cloud album or a hosted backend. Your photos, SQLite datab
 
 The upgrade adds server pagination and thumbnails, persistent tasks with pause/resume/cancel and per-photo retry, manual caption/date/location edits, group corrections, backup/restore, and cross-platform packaging. All 17 isolated tests and the production build pass. Packaged macOS background/recovery and real local-model rendering passed; a reversible macOS wallpaper set/readback smoke restored the original wallpapers.
 
-The local DMG and Windows NSIS installers are unsigned and have not been publicly released. Real 1k/10k photo-library performance, login/wake scheduling, clean installation/upgrades, and Windows 11 device acceptance remain pending. Synthetic-library benchmarks do not establish those acceptance results. See the [delivery record and installation/recovery guide](docs/upgrade-assessment-2026-10-04.md).
+The unsigned DMG and Windows NSIS installers are available in the public v0.2.0-beta.1 pre-release. A fixed real 1k-photo benchmark passed; real 10k-library performance, login/wake scheduling, clean installation/upgrades, and Windows 11 device acceptance remain pending. Synthetic-library benchmarks do not establish those acceptance results. See the [delivery record and installation/recovery guide](docs/upgrade-assessment-2026-10-04.md).
 
 ## What It Does
 
@@ -65,11 +65,11 @@ The local DMG and Windows NSIS installers are unsigned and have not been publicl
 
 The recommended user install is a GitHub Release asset:
 
-- [Download InkTime Gallery](https://github.com/niiwei/inktime-gallery/releases/latest)
+- [Download InkTime Gallery](https://github.com/niiwei/inktime-gallery/releases/tag/v0.2.0-beta.1)
 
 Current release notes:
 
-- Mainly targets Apple Silicon Mac.
+- Includes Apple Silicon Mac DMG and a Windows 11 x64 NSIS preview.
 - The current build is unsigned, so the first launch may require approval in macOS security settings.
 - Local-model usage requires [Ollama](https://ollama.com/) to be installed and running.
 
